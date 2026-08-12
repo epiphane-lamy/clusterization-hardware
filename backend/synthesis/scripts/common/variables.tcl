@@ -1,0 +1,46 @@
+#-----------------------------------------------------------------------------
+# MAIN Custom Variables to be used by GENUS and INNOVUS (set in run_first.tcl)
+#-----------------------------------------------------------------------------
+set PROJECT_DIR $env(PROJECT_DIR)
+set TECH_DIR $env(TECH_DIR)
+set LEF_DIR $env(LEF_DIR)
+set DESIGNS $env(DESIGNS)
+set DESIGNS $env(DESIGNS)
+set HDL_NAME $env(HDL_NAME)
+set RTL_FILES $env(RTL_FILES)
+set INTERCONNECT_MODE ple
+# SDC related variables
+set MAIN_CLOCK_NAME $env(MAIN_CLOCK_NAME)
+set MAIN_RST_NAME $env(MAIN_RST_NAME)
+set BEST_LIB_OPERATING_CONDITION $env(BEST_LIB_OPERATING_CONDITION)
+set WORST_LIB_OPERATING_CONDITION $env(WORST_LIB_OPERATING_CONDITION)
+set period_clk $env(period_clk)
+set clk_uncertainty $env(clk_uncertainty)
+set clk_latency $env(clk_latency)
+set in_delay $env(in_delay)
+set out_delay $env(out_delay)
+set out_load $env(out_load)
+set slew $env(slew)
+set slew_min_rise $env(slew_min_rise)
+set slew_min_fall $env(slew_min_fall)
+set slew_max_rise $env(slew_max_rise)
+set slew_max_fall $env(slew_max_fall)
+# tech related variables
+set WORST_LIST $env(WORST_LIST)
+set BEST_LIST $env(BEST_LIST)
+set LEF_LIST $env(LEF_LIST)
+set WORST_CAP_LIST $env(WORST_CAP_LIST)
+set QRC_LIST $env(QRC_LIST)
+set CAP_MAX $env(CAP_MAX)
+set CAP_MIN $env(CAP_MIN)
+# power nets
+set NET_ZERO $env(NET_ZERO)
+set NET_ONE $env(NET_ONE)
+# cts cells
+set BUFFERS_CTS $env(BUFFERS_CTS)
+set INVERTERS_CTS $env(INVERTERS_CTS)
+# placing core design pins
+set LEFT_CORE_PINS $env(LEFT_CORE_PINS)
+set TOP_CORE_PINS $env(TOP_CORE_PINS)
+set RIGHT_CORE_PINS $env(RIGHT_CORE_PINS)
+set BOTTOM_CORE_PINS $env(BOTTOM_CORE_PINS)

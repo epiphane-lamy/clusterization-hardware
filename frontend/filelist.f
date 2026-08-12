@@ -1,0 +1,17 @@
+memory_cluster.sv
+full_step_cluster_tb.sv
+full_step_tb.sv
+cluster_assign.sv
+cluster_assign_tb.sv
+full_step_tb.sv
+act_coord.sv
+act_coord_tb.sv
+step_tb.sv
+ping_pong_arbitrer.sv
+norm_entropy_grad.sv
+norm_entropy_grad_tb.sv
+inv_LUT.sv
+dist_mat_arg_exp.sv
+memory_dual_port.sv
+exp_LUT.sv
+dist_mat_arg_exp_tb.sv

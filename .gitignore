@@ -1,0 +1,25 @@
+# Dossiers work
+**/work/
+
+# Fichiers .out
+*.out
+
+# Fichiers/dossiers générés frontend
+frontend/clusterization
+frontend/hdl_temp/
+frontend/sdf_cmd_file.cmd
+frontend/simulation/
+frontend/simvision3803468.diag
+
+# Xcelium
+frontend/waves.shm/
+frontend/xcelium.d/
+frontend/xrun.history
+frontend/xrun.key
+frontend/xrun.log
+
+# Cadence temporary files
+.cadence/
+
+# SimVision temporary files
+.simvision/
