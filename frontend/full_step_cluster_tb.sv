@@ -1,20 +1,28 @@
 
 
 module full_step_cluster_tb #(
-    parameter int NB_POINTS    = 1100,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int NB_ITER      = 50,          // nombre d'itérations
-    parameter int COORD_W      = 16,          // largeur des coordonnees
-    parameter int ADDR_W       = 11,           // largeur des adresses points Xf
-    parameter int P_IJ_W       = 16,          // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = 11,           // largeur des adresses P_ij
-    parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
-    parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
-    parameter int ACT_W        = 32,          // largeur des valeurs d'actualisation, fixed-point SIGNE
-    parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
-    parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
-    parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
-    parameter int D2_W         = SQ_W + 1,    // D2 = x2 + y2
-    parameter int TOL          = 422144877    // cst TOL
+    parameter int NB_POINTS    = 1100,              // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
+    parameter int NB_ITER      = 50,                // nombre d'itérations
+
+    parameter int COORD_W      = 16,                // largeur des coordonnees
+    parameter int ADDR_W       = $clog2(NB_POINTS), // largeur des adresses points Xf
+
+    parameter int P_IJ_W       = 16,                // largeur des P_ij, fixed-point SIGNE
+    parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS), // largeur des adresses P_ij
+    parameter int SUM_ROW_P_W  = 32,                // largeur de sum_row_P
+
+    parameter int ADDR_LUT_INV = 10,                // largeur des adresses LUT exp
+    parameter int ADDR_LUT_EXP = 14,                // largeur des adresses LUT exp
+
+    parameter int ACT_W        = 32,                // largeur des valeurs d'actualisation, fixed-point SIGNE
+
+    parameter int ENTH_W       = 32,                // largeur des valeurs d'enthropie, fixed-point SIGNE
+
+    parameter int STEP_W       = $clog2(NB_ITER),   // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
+    parameter int K_W          = 16,                // largeur de la constante K_step precalculee (signee, negative)
+    parameter int SQ_W         = 2 * COORD_W,       // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
+    parameter int D2_W         = SQ_W + 1,          // D2 = x2 + y2
+    parameter int TOL          = 422144877          // cst TOL
 	);
 
 
@@ -97,7 +105,7 @@ module full_step_cluster_tb #(
     logic [ADDR_W-1:0]          out_j_b1;
     logic                       valid_out_b1;
 
-    logic [31:0] sum_row_P;
+    logic [SUM_ROW_P_W-1:0] sum_row_P;
     logic        valid_sum_row_P;
 
 
@@ -196,13 +204,13 @@ module full_step_cluster_tb #(
     logic [COORD_W-1:0]      result_inv;
 
 	// --- Sortie vers la mémoire d'acutalisation des coord *** ---
-    logic signed [31:0]            mult_act_X;
-    logic signed [31:0]            mult_act_Y;
-    logic [ADDR_P_IJ_W-1:0] addr_act;
-    logic [ADDR_P_IJ_W-1:0] addr_act_b2;
-    logic                   valid_out_b2;
+    logic signed [ACT_W-1:0] mult_act_X;
+    logic signed [ACT_W-1:0] mult_act_Y;
+    logic [ADDR_P_IJ_W-1:0]  addr_act;
+    logic [ADDR_P_IJ_W-1:0]  addr_act_b2;
+    logic                    valid_out_b2;
     
-    logic [31:0] entropy;
+    logic [ENTH_W-1:0] entropy;
     logic        valid_entropy;
 
     logic done_b2;
@@ -294,7 +302,7 @@ module full_step_cluster_tb #(
     logic [P_IJ_W-1:0]      P_ij_A;
 
     // memory P_ij bloc A
-    memory_dual_port #(
+    memory_single_port #(
         .ADDR_W (ADDR_P_IJ_W),
         .DATA_W (P_IJ_W)
     ) memory_P_ij_A (
@@ -303,11 +311,9 @@ module full_step_cluster_tb #(
 
         .we(we_P_ij_A),
         .addr(addr_P_ij_A),
-        .data_in1(data_in_P_ij_A),
-        .data_in2(),
+        .data_in(data_in_P_ij_A),
 
-        .data_out1(P_ij_A),
-        .data_out2()
+        .data_out(P_ij_A)
     );
 
 
@@ -317,7 +323,7 @@ module full_step_cluster_tb #(
     logic [P_IJ_W-1:0]      P_ij_B;
 
     // memory P_ij bloc B
-    memory_dual_port #(
+    memory_single_port #(
         .ADDR_W (ADDR_P_IJ_W),
         .DATA_W (P_IJ_W)
     ) memory_P_ij (
@@ -326,11 +332,9 @@ module full_step_cluster_tb #(
 
         .we(we_P_ij_B),
         .addr(addr_P_ij_B),
-        .data_in1(data_in_P_ij_B),
-        .data_in2(),
+        .data_in(data_in_P_ij_B),
 
-        .data_out1(P_ij_B),
-        .data_out2()
+        .data_out(P_ij_B)
     );
 
         // ping_pong_arbitrer
@@ -388,8 +392,8 @@ module full_step_cluster_tb #(
     // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
     logic               control_mem_b3;
     logic [ADDR_W-1:0]  addr_act_b3;
-    logic signed [31:0] mult_act_X_mem;
-    logic signed [31:0] mult_act_Y_mem;
+    logic signed [ACT_W-1:0] mult_act_X_mem;
+    logic signed [ACT_W-1:0] mult_act_Y_mem;
 
     logic done_act;
 
@@ -397,7 +401,8 @@ module full_step_cluster_tb #(
     act_coord #(
         .NB_POINTS (NB_POINTS),
         .COORD_W   (COORD_W),
-        .ADDR_W    (ADDR_W)
+        .ADDR_W    (ADDR_W),
+        .ACT_W     (ACT_W)
     ) dut_compute (
         .clk(clk),
         .rst_n(rst_n),
@@ -784,10 +789,10 @@ module full_step_cluster_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed.txt", "r");
+        fd = $fopen("cluster_fixed_full_benchmark.txt", "r");
 
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
+            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
         end
 
         addr_file = 1;
@@ -809,7 +814,7 @@ module full_step_cluster_tb #(
 
         $fclose(fd);
 
-        $display("\n%0d points chargés depuis cluster_fixed.txt", NB_POINTS);
+        $display("\n%0d points chargés depuis cluster_fixed_full_benchmark.txt", NB_POINTS);
 
 
 
@@ -832,14 +837,14 @@ module full_step_cluster_tb #(
 
 
         fd_cluster = $fopen("resultats.txt", "w");
-        fd         = $fopen("cluster_fixed.txt", "r");
+        fd         = $fopen("cluster_fixed_full_benchmark.txt", "r");
 
         if (fd_cluster == 0) begin
             $display("Erreur : impossible d'ouvrir le fichier");
             $finish;
         end
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
+            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
         end
 
 

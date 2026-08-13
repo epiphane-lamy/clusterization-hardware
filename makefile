@@ -27,7 +27,7 @@ export period_clk = $(PERIOD_CLK)
 #-----------------------------------------------------------------------------
 # General design dependent variables
 #-----------------------------------------------------------------------------
-export DESIGNS = full_step_cluster#cluster_assign#full_step#act_coord#step#dist_mat_arg_exp#norm_entropy_grad
+export DESIGNS = full_step_cluster#dist_mat_arg_expcluster_assign#full_step#act_coord#step#dist_mat_arg_exp#norm_entropy_grad
 export HDL_NAME = $(DESIGNS)
 export PROJECT_DIR := $(shell pwd)
 export BACKEND_DIR = $(PROJECT_DIR)/backend

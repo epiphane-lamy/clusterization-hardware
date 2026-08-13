@@ -156,7 +156,7 @@ int main() {
         Y_f[i] = ((int16_t)Y_q[i]) << 8;
     }
 
-    FILE *f_fixed = fopen("cluster_fixed.txt", "w");
+    FILE *f_fixed = fopen("cluster_fixed_full_benchmark.txt", "w");
     if (f_fixed == NULL) {
         printf("Erreur lors de l'ouverture de cluster_fixed.txt\n");
         return 1;
