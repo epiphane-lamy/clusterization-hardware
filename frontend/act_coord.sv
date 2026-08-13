@@ -2,7 +2,8 @@
 module act_coord #(
     parameter int NB_POINTS    = 8,           // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int COORD_W      = 16,           // largeur des coordonnees, fixed-point SIGNE
-    parameter int ADDR_W       = 7
+    parameter int ADDR_W       = 7,
+    parameter int ACT_W        = 32
     )(
 	input  logic               clk,
 	input  logic               rst_n,
@@ -20,8 +21,8 @@ module act_coord #(
 
     // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
     output logic [ADDR_W-1:0]  addr_act,
-    input  logic signed [31:0] mult_act_X,
-    input  logic signed [31:0] mult_act_Y,
+    input  logic signed [ACT_W-1:0] mult_act_X,
+    input  logic signed [ACT_W-1:0] mult_act_Y,
  
     output logic done
 );
@@ -114,7 +115,6 @@ module act_coord #(
         end
     end
 
-    
 
 
 endmodule

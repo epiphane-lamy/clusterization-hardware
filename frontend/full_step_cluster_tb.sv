@@ -1,28 +1,20 @@
 
 
 module full_step_cluster_tb #(
-    parameter int NB_POINTS    = 100,              // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int NB_ITER      = 50,                // nombre d'itérations
-
-    parameter int COORD_W      = 16,                // largeur des coordonnees
-    parameter int ADDR_W       = $clog2(NB_POINTS), // largeur des adresses points Xf
-
-    parameter int P_IJ_W       = 16,                // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS), // largeur des adresses P_ij
-    parameter int SUM_ROW_P_W  = 32,                // largeur de sum_row_P
-
-    parameter int ADDR_LUT_INV = 10,                // largeur des adresses LUT exp
-    parameter int ADDR_LUT_EXP = 14,                // largeur des adresses LUT exp
-
-    parameter int ACT_W        = 32,                // largeur des valeurs d'actualisation, fixed-point SIGNE
-
-    parameter int ENTH_W       = 32,                // largeur des valeurs d'enthropie, fixed-point SIGNE
-
-    parameter int STEP_W       = $clog2(NB_ITER),   // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
-    parameter int K_W          = 16,                // largeur de la constante K_step precalculee (signee, negative)
-    parameter int SQ_W         = 2 * COORD_W,       // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
-    parameter int D2_W         = SQ_W + 1,          // D2 = x2 + y2
-    parameter int TOL          = 422144877          // cst TOL
+    parameter int NB_POINTS    = 1250,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
+    parameter int NB_ITER      = 50,          // nombre d'itérations
+    parameter int COORD_W      = 16,          // largeur des coordonnees
+    parameter int ADDR_W       = 11,           // largeur des adresses points Xf
+    parameter int P_IJ_W       = 16,          // largeur des P_ij, fixed-point SIGNE
+    parameter int ADDR_P_IJ_W  = 11,           // largeur des adresses P_ij
+    parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
+    parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
+    parameter int ACT_W        = 32,          // largeur des valeurs d'actualisation, fixed-point SIGNE
+    parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
+    parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
+    parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
+    parameter int D2_W         = SQ_W + 1,    // D2 = x2 + y2
+    parameter int TOL          = 422144877    // cst TOL
 	);
 
 
@@ -105,7 +97,7 @@ module full_step_cluster_tb #(
     logic [ADDR_W-1:0]          out_j_b1;
     logic                       valid_out_b1;
 
-    logic [SUM_ROW_P_W-1:0] sum_row_P;
+    logic [31:0] sum_row_P;
     logic        valid_sum_row_P;
 
 
@@ -204,13 +196,13 @@ module full_step_cluster_tb #(
     logic [COORD_W-1:0]      result_inv;
 
 	// --- Sortie vers la mémoire d'acutalisation des coord *** ---
-    logic signed [ACT_W-1:0] mult_act_X;
-    logic signed [ACT_W-1:0] mult_act_Y;
-    logic [ADDR_P_IJ_W-1:0]  addr_act;
-    logic [ADDR_P_IJ_W-1:0]  addr_act_b2;
-    logic                    valid_out_b2;
+    logic signed [31:0]            mult_act_X;
+    logic signed [31:0]            mult_act_Y;
+    logic [ADDR_P_IJ_W-1:0] addr_act;
+    logic [ADDR_P_IJ_W-1:0] addr_act_b2;
+    logic                   valid_out_b2;
     
-    logic [ENTH_W-1:0] entropy;
+    logic [31:0] entropy;
     logic        valid_entropy;
 
     logic done_b2;
@@ -302,7 +294,7 @@ module full_step_cluster_tb #(
     logic [P_IJ_W-1:0]      P_ij_A;
 
     // memory P_ij bloc A
-    memory_single_port #(
+    memory_dual_port #(
         .ADDR_W (ADDR_P_IJ_W),
         .DATA_W (P_IJ_W)
     ) memory_P_ij_A (
@@ -311,9 +303,11 @@ module full_step_cluster_tb #(
 
         .we(we_P_ij_A),
         .addr(addr_P_ij_A),
-        .data_in(data_in_P_ij_A),
+        .data_in1(data_in_P_ij_A),
+        .data_in2(),
 
-        .data_out(P_ij_A)
+        .data_out1(P_ij_A),
+        .data_out2()
     );
 
 
@@ -323,7 +317,7 @@ module full_step_cluster_tb #(
     logic [P_IJ_W-1:0]      P_ij_B;
 
     // memory P_ij bloc B
-    memory_single_port #(
+    memory_dual_port #(
         .ADDR_W (ADDR_P_IJ_W),
         .DATA_W (P_IJ_W)
     ) memory_P_ij (
@@ -332,9 +326,11 @@ module full_step_cluster_tb #(
 
         .we(we_P_ij_B),
         .addr(addr_P_ij_B),
-        .data_in(data_in_P_ij_B),
+        .data_in1(data_in_P_ij_B),
+        .data_in2(),
 
-        .data_out(P_ij_B)
+        .data_out1(P_ij_B),
+        .data_out2()
     );
 
         // ping_pong_arbitrer
@@ -392,8 +388,8 @@ module full_step_cluster_tb #(
     // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
     logic               control_mem_b3;
     logic [ADDR_W-1:0]  addr_act_b3;
-    logic signed [ACT_W-1:0] mult_act_X_mem;
-    logic signed [ACT_W-1:0] mult_act_Y_mem;
+    logic signed [31:0] mult_act_X_mem;
+    logic signed [31:0] mult_act_Y_mem;
 
     logic done_act;
 
@@ -401,8 +397,7 @@ module full_step_cluster_tb #(
     act_coord #(
         .NB_POINTS (NB_POINTS),
         .COORD_W   (COORD_W),
-        .ADDR_W    (ADDR_W),
-        .ACT_W     (ACT_W)
+        .ADDR_W    (ADDR_W)
     ) dut_compute (
         .clk(clk),
         .rst_n(rst_n),
@@ -714,19 +709,18 @@ module full_step_cluster_tb #(
         forever begin
             @(posedge clk);
 
-            /*
             if (valid_sum_row_P) begin
                 $display("[%0t] RESULT sum_row_P i=%0d j=%0d sum_row_P=%0d",
                         $time,
                         out_i_b1,
                         out_j_b1,
                         sum_row_P);
-            end*/
-            
-            if (start_compute_b1) begin
-                $display("\n=== step_idx = %0d ===", step_idx);
             end
-            /*
+            
+            if (start_b4) begin
+                $display("\n=== start_b4 ===");
+            end
+
             if (valid_entropy) begin
                 $display("[%0t] RESULT entropy i=%0d j=%0d entropy=%0d",
                         $time,
@@ -747,7 +741,7 @@ module full_step_cluster_tb #(
                         $time,
                         coord_X_act,
                         coord_Y_act);
-            end*/
+            end
         end
     endtask
 
@@ -757,7 +751,6 @@ module full_step_cluster_tb #(
     int ret;
     int xf, yf;
     real xf_real, yf_real;
-    real scale, xmin, ymin;
     int addr_file;
     int addr_mem_coord;
     initial begin
@@ -789,15 +782,15 @@ module full_step_cluster_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed_full_benchmark.txt", "r");
+        fd = $fopen("cluster_fixed_full_benchmark_sans_entete.txt", "r");
 
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
+            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark_sans_entete.txt");
         end
 
-        addr_file = 1;
+        addr_file = 0;
 
-        while (addr_file < NB_POINTS+1) begin
+        while (addr_file < NB_POINTS) begin
 
             ret = $fscanf(fd, "%d %d", xf, yf);
 
@@ -814,7 +807,7 @@ module full_step_cluster_tb #(
 
         $fclose(fd);
 
-        $display("\n%0d points chargés depuis cluster_fixed_full_benchmark.txt", NB_POINTS);
+        $display("%0d points chargés depuis cluster_fixed_full_benchmark_sans_entete.txt", addr_file);
 
 
 
@@ -834,36 +827,36 @@ module full_step_cluster_tb #(
         wait (done_cluster);
 
         @(posedge clk);
+        for (int i = 0; i < NB_POINTS; i++) begin
+            read_memory_cluster(i);
+        end
 
 
         fd_cluster = $fopen("resultats.txt", "w");
-        fd         = $fopen("cluster_fixed_full_benchmark.txt", "r");
+        fd         = $fopen("cluster_fixed_full_benchmark_sans_entete.txt", "r");
 
         if (fd_cluster == 0) begin
             $display("Erreur : impossible d'ouvrir le fichier");
             $finish;
         end
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
+            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark_sans_entete.txt");
         end
 
 
         addr_file = 0;
-        ret = $fscanf(fd, "%f %f %f", scale, xmin, ymin);
-        addr_file++;
 
-        addr_file = 1;
-        while (addr_file < NB_POINTS+1) begin
+        while (addr_file < NB_POINTS) begin
 
             ret = $fscanf(fd, "%d %d", xf, yf);
 
             if (ret != 2)
                 break;
 
-            xf_real = (xf / 256.0) / scale + xmin;
-            yf_real = (yf / 256.0) / scale + ymin;
+            xf_real = (xf / 256.0) / 64.206764 + 5.531377;
+            yf_real = (yf / 256.0) / 64.206764 + 3.014748;
             $fwrite(fd_cluster, "%f %f ", xf_real, yf_real);
-            save_memory_cluster(addr_file-1);
+            save_memory_cluster(addr_file);
 
             addr_file++;
         end

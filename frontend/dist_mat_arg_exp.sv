@@ -4,6 +4,9 @@ module dist_mat_arg_exp #(
     parameter int NB_POINTS    = 8,           // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int COORD_W      = 16,           // largeur des coordonnees, fixed-point SIGNE
     parameter int ADDR_W       = 7,           // largeur des adresses points Xf
+    parameter int P_IJ_W       = 16,                // largeur des P_ij, fixed-point SIGNE
+    parameter int ADDR_P_IJ_W  = 7,           // largeur des adresses P_ij
+    parameter int SUM_ROW_P_W  = 32,                // largeur de sum_row_P
     parameter int ADDR_LUT_EXP = 14,           // largeur des adresses LUT exp
     parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
     parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
@@ -25,12 +28,12 @@ module dist_mat_arg_exp #(
     input  logic [COORD_W-1:0]      result_exp,
 
 	// --- Sortie vers le bloc *** ---
-    output logic [COORD_W - 1:0] P_ij,   // D2_ij * K_step
+    output logic [P_IJ_W - 1:0] P_ij,   // D2_ij * K_step
     output logic [ADDR_W-1:0]          out_i,
     output logic [ADDR_W-1:0]          out_j,
     output logic                       valid_out,
 
-    output logic [31:0] sum_row_P,
+    output logic [SUM_ROW_P_W-1:0] sum_row_P,
     output logic        valid_sum_row_P,
 
  
@@ -379,8 +382,8 @@ module dist_mat_arg_exp #(
     end
     assign valid_sum_row_P = (sum_row_P_count == NB_POINTS) ? 1 : 0;
     */
-    logic [31:0] sum_row_P_reg;
-    logic [31:0] sum_row_P_next;
+    logic [SUM_ROW_P_W-1:0] sum_row_P_reg;
+    logic [SUM_ROW_P_W-1:0] sum_row_P_next;
 
     assign sum_row_P_next = sum_row_P_reg + P_ij;
 

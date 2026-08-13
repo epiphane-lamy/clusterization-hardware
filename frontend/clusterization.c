@@ -73,8 +73,8 @@ int main() {
     int n_total = 0;
 
     double val1, val2;
-    //while (fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
-    while (n_total < 100 && fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
+    while (fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
+    //while (n_total < 100 && fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
         if (n_total >= capacity) {
             capacity *= 2;
             X = (double *)realloc(X, capacity * sizeof(double));

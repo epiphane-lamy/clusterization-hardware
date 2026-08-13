@@ -5,6 +5,11 @@ module norm_entropy_grad #(
     parameter int ADDR_W       = 7,           // largeur des adresses P_ij
     parameter int P_IJ_W       = 16,           // largeur des P_ij, fixed-point SIGNE
     parameter int ADDR_P_IJ_W  = 7,           // largeur des adresses P_ij
+    parameter int SUM_ROW_P_W  = 32,                // largeur de sum_row_P
+    parameter int ACT_W        = 32,                // largeur des valeurs d'actualisation, fixed-point SIGNE
+
+    parameter int ENTH_W       = 32,                // largeur des valeurs d'enthropie, fixed-point SIGNE
+
     parameter int ADDR_LUT_INV = 10,           // largeur des adresses LUT exp
     parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
     parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
@@ -27,16 +32,16 @@ module norm_entropy_grad #(
     input  logic [COORD_W-1:0]      result_inv,
 
 	// --- Sortie vers la mémoire d'acutalisation des coord *** ---
-    output logic signed [31:0]            mult_act_X,
-    output logic signed [31:0]            mult_act_Y,
+    output logic signed [ACT_W-1:0]            mult_act_X,
+    output logic signed [ACT_W-1:0]            mult_act_Y,
     output logic [ADDR_P_IJ_W-1:0] addr_act,
     output logic                   valid_out,
 
-    input logic  [31:0]      sum_row_P,
+    input logic  [SUM_ROW_P_W-1:0]      sum_row_P,
     input logic [ADDR_W-1:0] out_i,           // permet de savoir le numéro de la ligne
     input logic              valid_sum_row_P, // lance le balayage d'une ligne
 
-    output logic [31:0] entropy,
+    output logic [ENTH_W-1:0] entropy,
     output logic        valid_entropy,
  
     output logic done
@@ -217,7 +222,7 @@ module norm_entropy_grad #(
     // Capture de out_i / sum_row_P_i / coord_X_i / coord_Y_i
     // -------------------------------------------------------------------
     logic [COORD_W-1:0] coord_X_i, coord_Y_i;
-    logic [31:0] sum_row_P_i;
+    logic [SUM_ROW_P_W-1:0] sum_row_P_i;
 
     always_ff @(posedge clk) begin
         if (start_pulse) begin
@@ -234,18 +239,18 @@ module norm_entropy_grad #(
     // -------------------------------------------------------------------
     // Compute de inv[sum_row_P]
     // -------------------------------------------------------------------
-    logic [4:0] msb_comb;
-    logic [31:0] sum_row_P_inv;
-    logic [4:0]  msb;
-    logic [31:0] mantissa;
+    logic [$clog2(SUM_ROW_P_W)-1:0] msb_comb;
+    logic [SUM_ROW_P_W-1:0] sum_row_P_inv;
+    logic [$clog2(SUM_ROW_P_W)-1:0]  msb;
+    logic [SUM_ROW_P_W-1:0] mantissa;
 
     logic [6:0]  debug_count;
 
     always_comb begin
-        msb_comb = 5'd0;
-        for (int i = 31; i >= 0; i--)
+        msb_comb = '0;
+        for (int i = (SUM_ROW_P_W-1); i >= 0; i--)
             if (sum_row_P_i[i]) begin
-                msb_comb = i[4:0];
+                msb_comb = i[$clog2(SUM_ROW_P_W)-1:0];
                 break;
             end
     end
@@ -261,7 +266,7 @@ module norm_entropy_grad #(
         end
     end
 
-    assign index_LUT_inv = mantissa[31:22];
+    assign index_LUT_inv = mantissa[SUM_ROW_P_W-1:SUM_ROW_P_W-10];
 
 
     // -------------------------------------------------------------------
@@ -275,8 +280,8 @@ module norm_entropy_grad #(
     logic                 valid_1;
 
     // Etage 1 -> 2 : calcul de P_ij_norm * coord
-    logic [32:0]       mult_X;
-    logic [32:0]       mult_Y;
+    logic [ACT_W-1:0]       mult_X;
+    logic [ACT_W-1:0]       mult_Y;
     logic [ADDR_W-1:0] j_2;
     logic              valid_2;
  
@@ -345,7 +350,7 @@ module norm_entropy_grad #(
             end*/
 
 //--------------------------à décommenter si qqch ne va pas !--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            
+            /*
             if (valid_1 && j_idx_d < 100 && debug_count < 100) begin
                 $display("[%0t] RESULT i=%0d j=%0d P_ij=%0d P_ij_norm=%0d ",
                     $time,
@@ -354,7 +359,7 @@ module norm_entropy_grad #(
                     P_ij,
                     P_ij_norm
                 );
-            end
+            end*/
 
             
 
@@ -406,13 +411,14 @@ module norm_entropy_grad #(
             );*/
 
             if (valid_mult_act) begin
+                /*
                  $display("[%0t] test mult_act out_j=%0d mult_act_X=%0d mult_act_Y=%0d forca=%0d",
                         $time,
                         out_j,
                         mult_act_X,
                         mult_act_Y,
                         forca
-                        );
+                        );*/
                 // etage 4 : calcul de forca * grad_x_float
                 //mult_act_X <= (grad_X * forca) >> 16;
                 mult_act_X <= (grad_X * forca_s) >>> 16;
