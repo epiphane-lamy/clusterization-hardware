@@ -9,7 +9,7 @@ set object 1 rectangle from screen 0,0 to screen 1,1 behind fillcolor rgb "white
 unset grid
 unset key
 
-plot "cluster1.txt" using 1:2:3 with points pt 7 palette
+plot "cluster.txt" using 1:2:3 with points pt 7 palette
 
 set output
 EOF
@@ -24,7 +24,7 @@ set object 1 rectangle from screen 0,0 to screen 1,1 behind fillcolor rgb "white
 unset grid
 unset key
 
-plot "cluster1.txt" using 1:2 with points pt 7 ps 1.5 lc rgb "black"
+plot "cluster.txt" using 1:2 with points pt 7 ps 1.5 lc rgb "black"
 
 set output
 EOF

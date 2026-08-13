@@ -162,7 +162,7 @@ int main() {
         return 1;
     }
 
-    fprintf(f_fixed, "%f %f %f\n", range, xmin, ymin);
+    fprintf(f_fixed, "%f %f %f\n", scale_points, xmin, ymin);
     for (int i = 0; i < n_total; i++) {
         fprintf(f_fixed, "%d %d\n", X_f[i], Y_f[i]);
     }

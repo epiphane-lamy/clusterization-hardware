@@ -4,9 +4,9 @@ module full_step_cluster_tb #(
     parameter int NB_POINTS    = 1250,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int NB_ITER      = 50,          // nombre d'itérations
     parameter int COORD_W      = 16,          // largeur des coordonnees
-    parameter int ADDR_W       = 11,           // largeur des adresses points Xf
+    parameter int ADDR_W       = $clog2(NB_POINTS),           // largeur des adresses points Xf
     parameter int P_IJ_W       = 16,          // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = 11,           // largeur des adresses P_ij
+    parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS),           // largeur des adresses P_ij
     parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
     parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
     parameter int ACT_W        = 32,          // largeur des valeurs d'actualisation, fixed-point SIGNE
@@ -751,6 +751,7 @@ module full_step_cluster_tb #(
     int ret;
     int xf, yf;
     real xf_real, yf_real;
+    real scale, xmin, ymin;
     int addr_file;
     int addr_mem_coord;
     initial begin
@@ -782,12 +783,14 @@ module full_step_cluster_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed_full_benchmark_sans_entete.txt", "r");
+        fd = $fopen("cluster_fixed_full_benchmark.txt", "r");
 
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark_sans_entete.txt");
+            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
         end
 
+        // on jette l'entete
+        ret = $fscanf(fd, "%f %f %f", scale, xmin, ymin);
         addr_file = 0;
 
         while (addr_file < NB_POINTS) begin
@@ -807,7 +810,7 @@ module full_step_cluster_tb #(
 
         $fclose(fd);
 
-        $display("%0d points chargés depuis cluster_fixed_full_benchmark_sans_entete.txt", addr_file);
+        $display("%0d points chargés depuis cluster_fixed_full_benchmark.txt", addr_file);
 
 
 
@@ -833,19 +836,26 @@ module full_step_cluster_tb #(
 
 
         fd_cluster = $fopen("resultats.txt", "w");
-        fd         = $fopen("cluster_fixed_full_benchmark_sans_entete.txt", "r");
+        fd         = $fopen("cluster_fixed_full_benchmark.txt", "r");
 
         if (fd_cluster == 0) begin
             $display("Erreur : impossible d'ouvrir le fichier");
             $finish;
         end
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark_sans_entete.txt");
+            $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
         end
 
 
-        addr_file = 0;
+        ret = $fscanf(fd, "%f %f %f", scale, xmin, ymin);
 
+        if (ret != 3) begin
+            $fatal(1, "Erreur lecture en-tête : scale/xmin/ymin");
+        end
+
+        $display("scale=%f xmin=%f ymin=%f", scale, xmin, ymin);
+
+        addr_file = 0;
         while (addr_file < NB_POINTS) begin
 
             ret = $fscanf(fd, "%d %d", xf, yf);
@@ -853,8 +863,8 @@ module full_step_cluster_tb #(
             if (ret != 2)
                 break;
 
-            xf_real = (xf / 256.0) / 64.206764 + 5.531377;
-            yf_real = (yf / 256.0) / 64.206764 + 3.014748;
+            xf_real = (xf / 256.0) / scale + xmin;
+            yf_real = (yf / 256.0) / scale + ymin;
             $fwrite(fd_cluster, "%f %f ", xf_real, yf_real);
             save_memory_cluster(addr_file);
 
