@@ -345,7 +345,7 @@ module norm_entropy_grad #(
             end*/
 
 //--------------------------à décommenter si qqch ne va pas !--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            /*
+            
             if (valid_1 && j_idx_d < 100 && debug_count < 100) begin
                 $display("[%0t] RESULT i=%0d j=%0d P_ij=%0d P_ij_norm=%0d ",
                     $time,
@@ -354,7 +354,7 @@ module norm_entropy_grad #(
                     P_ij,
                     P_ij_norm
                 );
-            end*/
+            end
 
             
 
@@ -406,7 +406,13 @@ module norm_entropy_grad #(
             );*/
 
             if (valid_mult_act) begin
-                
+                 $display("[%0t] test mult_act out_j=%0d mult_act_X=%0d mult_act_Y=%0d forca=%0d",
+                        $time,
+                        out_j,
+                        mult_act_X,
+                        mult_act_Y,
+                        forca
+                        );
                 // etage 4 : calcul de forca * grad_x_float
                 //mult_act_X <= (grad_X * forca) >> 16;
                 mult_act_X <= (grad_X * forca_s) >>> 16;

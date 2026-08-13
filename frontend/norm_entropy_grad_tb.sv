@@ -338,6 +338,7 @@ module norm_entropy_grad_tb #(
         control_mem_coord = 1;
         control_mem_P_ij  = 1;
 
+        out_i =  1;
         sum_row_P = 32'd1555704;
         valid_sum_row_P = 1;
 
