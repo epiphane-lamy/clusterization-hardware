@@ -1,6 +1,6 @@
 
 
-module full_step_cluster_tb #(
+module clusterization #(
     parameter int NB_POINTS    = 1250,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int NB_ITER      = 50,          // nombre d'itérations
     parameter int COORD_W      = 16,          // largeur des coordonnees
@@ -15,11 +15,25 @@ module full_step_cluster_tb #(
     parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
     parameter int D2_W         = SQ_W + 1,    // D2 = x2 + y2
     parameter int TOL          = 422144877    // cst TOL
-	);
+	)(
+    input  logic                 clk,
+    input  logic                 rst_n,
+
+    input logic              start,     // lance le clustering
+
+    // --- Port BRAM point (Xf / Yf) ---
+    input logic               control_mem_coord_load,
+    input coord_mem_port_t    port_coord_b1_load,
+    input coord_mem_port_t    port_coord_b2_load,
+
+    // --- Port BRAM cluster ---
+    output  logic               control_mem_cluster_read,
+    output  logic [ADDR_W-1:0]  addr_cluster_read,
+    output  logic [ADDR_W-1:0]  cluster_out
+    );
 
 
     typedef struct packed {
-
         logic               we;
         logic [ADDR_W-1:0]  addr;
 
@@ -61,19 +75,18 @@ module full_step_cluster_tb #(
     // Déclaration des ports mémoire coord_b1
     // -------------------------------------------------------------------
     coord_owner_t     owner_b1;
-    coord_mem_port_t  port_tb_b1, port_compute_b1, port_act_b1, port_cluster_b1, port_mux_b1;
+    coord_mem_port_t  port_compute_b1, port_act_b1, port_cluster_b1, port_mux_b1;
 
     // -------------------------------------------------------------------
     // Déclaration des ports mémoire coord_b2
     // -------------------------------------------------------------------
     coord_owner_t     owner_b2;
-    coord_mem_port_t  port_tb_b2, port_compute_b2, port_act_b2, port_cluster_b2, port_mux_b2;
+    coord_mem_port_t  port_compute_b2, port_act_b2, port_cluster_b2, port_mux_b2;
     
     // -------------------------------------------------------------------
     // Déclaration bloc exp et annexes
     // -------------------------------------------------------------------
     logic              start_b1;     // lance le balayage complet d'un step
-    logic              start_tb_b1;
     logic              start_compute_b1;
     logic [STEP_W-1:0] step_idx;  // index de l'iteration courante
 
@@ -82,7 +95,6 @@ module full_step_cluster_tb #(
     logic [ADDR_W-1:0] addr_coord_b1;
 
     logic              control_mem_coord_b1;
-    logic [ADDR_W-1:0] addr_coord_tb_b1;
     logic [ADDR_W-1:0] addr_coord_compute_b1;
 
     logic [COORD_W-1:0] coord_X_b1;
@@ -140,11 +152,8 @@ module full_step_cluster_tb #(
 
     // memory access
     logic               we_coord_b1;
-    logic               we_coord_tb_b1;
     logic [COORD_W-1:0] data_in1_coord_b1;
     logic [COORD_W-1:0] data_in2_coord_b1;
-    logic [COORD_W-1:0] data_in1_coord_tb_b1;
-    logic [COORD_W-1:0] data_in2_coord_tb_b1;
     
 
     // DUT memory coord points
@@ -182,7 +191,6 @@ module full_step_cluster_tb #(
     logic [COORD_W-1:0] coord_Y_b2;
 
     logic              control_mem_coord_b2;
-    logic [ADDR_W-1:0] addr_coord_tb_b2;
     logic [ADDR_W-1:0] addr_coord_compute_b2;
 
 
@@ -250,7 +258,6 @@ module full_step_cluster_tb #(
     );
 
     logic               we_coord_b2;
-    logic               we_coord_tb_b2;
     logic [COORD_W-1:0] data_in1_coord_b2;
     logic [COORD_W-1:0] data_in2_coord_b2;
     logic [COORD_W-1:0] data_in1_coord_tb_b2;
@@ -329,7 +336,7 @@ module full_step_cluster_tb #(
         .data_out(P_ij_B)
     );
 
-        // ping_pong_arbitrer
+    // ping_pong_arbitrer
     ping_pong_arbitrer #(
         .COORD_W (COORD_W),
         .ADDR_W (ADDR_W)
@@ -447,7 +454,6 @@ module full_step_cluster_tb #(
     // --- Port BRAM clusters ---
     logic              control_mem_cluster;
     logic [ADDR_W-1:0] addr_cluster;
-    logic [ADDR_W-1:0] addr_cluster_tb;
     logic [ADDR_W-1:0] addr_cluster_compute;
     logic              we_cluster;
     logic [ADDR_W-1:0] cluster_in;
@@ -549,7 +555,7 @@ module full_step_cluster_tb #(
         end
     end
 
-    assign start_b1 = start_tb_b1 || start_compute_b1;
+    assign start_b1 = start || start_compute_b1;
 
     logic all_steps_done;
 
@@ -575,10 +581,6 @@ module full_step_cluster_tb #(
         else                       owner_b1 = OWNER_COMPUTE;
     end
 
-    assign port_tb_b1.we       = we_coord_tb_b1;
-    assign port_tb_b1.addr     = addr_coord_tb_b1;
-    assign port_tb_b1.data_in1 = data_in1_coord_tb_b1;
-    assign port_tb_b1.data_in2 = data_in2_coord_tb_b1;
 
     assign port_compute_b1.we       = 1'b0;               // bloc_exp ne fait que lire
     assign port_compute_b1.addr     = addr_coord_compute_b1;
@@ -595,7 +597,7 @@ module full_step_cluster_tb #(
     assign port_cluster_b1.data_in1 = '0;
     assign port_cluster_b1.data_in2 = '0;
 
-    assign port_mux_b1 = mux_coord_port(owner_b1, port_tb_b1, port_compute_b1, port_act_b1, port_cluster_b1);
+    assign port_mux_b1 = mux_coord_port(owner_b1, port_coord_b1_load, port_compute_b1, port_act_b1, port_cluster_b1);
 
     assign we_coord_b1       = port_mux_b1.we;
     assign addr_coord_b1     = port_mux_b1.addr;
@@ -610,10 +612,6 @@ module full_step_cluster_tb #(
         else                       owner_b2 = OWNER_COMPUTE;
     end
 
-    assign port_tb_b2.we       = we_coord_tb_b2;
-    assign port_tb_b2.addr     = addr_coord_tb_b2;
-    assign port_tb_b2.data_in1 = data_in1_coord_tb_b2;
-    assign port_tb_b2.data_in2 = data_in2_coord_tb_b2;
 
     assign port_compute_b2.we       = 1'b0;               // bloc_grad ne fait que lire
     assign port_compute_b2.addr     = addr_coord_compute_b2;
@@ -625,7 +623,7 @@ module full_step_cluster_tb #(
     assign port_act_b2.data_in1 = coord_X_act;
     assign port_act_b2.data_in2 = coord_Y_act;
 
-    assign port_mux_b2 = mux_coord_port(owner_b2, port_tb_b2, port_compute_b2, port_act_b2, port_cluster_b2);
+    assign port_mux_b2 = mux_coord_port(owner_b2, port_coord_b2_load, port_compute_b2, port_act_b2, port_cluster_b2);
 
     assign we_coord_b2       = port_mux_b2.we;
     assign addr_coord_b2     = port_mux_b2.addr;
@@ -634,7 +632,7 @@ module full_step_cluster_tb #(
 
 
 
-    assign addr_cluster = (control_mem_cluster) ? addr_cluster_compute : addr_cluster_tb;
+    assign addr_cluster = (control_mem_cluster) ? addr_cluster_compute : addr_cluster_read;
 
     // -------------------------------------------------------------------
     // Tasks write/read memory coord bloc exp (1) et bloc grad (2)
@@ -768,7 +766,7 @@ module full_step_cluster_tb #(
         addr_cluster_tb      = '0;
 
 
-        start_tb_b1       =  0;
+        start       =  0;
 
         fork
             monitor_results();
@@ -814,9 +812,9 @@ module full_step_cluster_tb #(
         // lancement calcul
         control_mem_coord_b1 = 1;
         control_mem_coord_b2 = 1;
-        start_tb_b1 = 1;
+        start = 1;
         @(posedge clk);
-        start_tb_b1 = 0;
+        start = 0;
 
 
         // attente de fin du calcul 2 premières lignes
