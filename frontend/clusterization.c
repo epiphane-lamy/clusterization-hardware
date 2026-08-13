@@ -61,7 +61,7 @@ int main() {
     // --- 1. DATA INGESTION (X, Y) ---
     printf("--- L.E.G.I.A.O. V3 [2D MODE]: PROCESSING PLANAR MAP ---\n");
 
-    FILE *file = fopen("cluster1.txt", "r");
+    FILE *file = fopen("cluster.txt", "r");
     if (file == NULL) {
         printf("Error while opening the file cluster.txt\n");
         return 1;
@@ -73,8 +73,8 @@ int main() {
     int n_total = 0;
 
     double val1, val2;
-    while (fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
-    //while (n_total < 100 && fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
+    //while (fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
+    while (n_total < 100 && fscanf(file, "%lf %lf%*[^\n]", &val1, &val2) == 2) {
         if (n_total >= capacity) {
             capacity *= 2;
             X = (double *)realloc(X, capacity * sizeof(double));
@@ -239,10 +239,10 @@ int main() {
     long count_Hf_7 = 0;
     long count_Hf_8 = 0;
 
-    FILE *f_P_ij_fixed = fopen("P_ij_fixed.txt", "w");
+    //FILE *f_P_ij_fixed = fopen("P_ij_fixed.txt", "w");
     FILE *f_hex = fopen("k_step_rom.hex", "w");
-    FILE *f_act = fopen("mult_act_fixed.txt", "w");
-/*
+    //FILE *f_act = fopen("mult_act_fixed.txt", "w");
+
     for (int step = 0; step < max_iter; step++) {
         double K_float = 1.0 / (2.0 * T_real * T_real);
 
@@ -335,6 +335,8 @@ int main() {
                 count_pass_exp++;
 
                 //if (i == 2 && step == 0) printf("i=%d  j=%d P_ij=%d\n", i, j, P[i][j]);
+
+                //if (step == 0 && i == 0) fprintf(f_P_ij_fixed, "%d\n", P[i][j]);
             
 
                 
@@ -498,7 +500,7 @@ int main() {
             int64_t mult_act_X = ((int64_t)forca[i] * grad_x[i]) >> 16;
             int64_t mult_act_Y = ((int64_t)forca[i] * grad_y[i]) >> 16;
 
-            if (step == 0) fprintf(f_act, "%d %d\n", mult_act_X, mult_act_Y);
+            //if (step == 0) fprintf(f_act, "%d %d\n", mult_act_X, mult_act_Y);
 
 
             //if (i <= 99 && step == 0) printf("mult_act_X : %d\n", mult_act_X);
@@ -527,9 +529,9 @@ int main() {
         //printf("rapport        = %.8f\n", T_fixed_float / T_float);
     }
 
-    fclose(f_P_ij_fixed);
+    //fclose(f_P_ij_fixed);
     fclose(f_hex);
-    fclose(f_act);
+    //fclose(f_act);
     printf("min_H : %d\n", min_H);
     printf("max_H : %d\n", max_H);
     printf("max_X_f : %d\n", max_X_f);
@@ -567,7 +569,7 @@ int main() {
     printf("-3 < arg < -2 : %ld | proportion : %.2f %%\n",count_arg_6, (double)count_arg_6 / total * 100.0);
     printf("-2 < arg < -1 : %ld | proportion : %.2f %%\n",count_arg_7, (double)count_arg_7 / total * 100.0);
     printf("-1 < arg < 0 : %ld | proportion : %.2f %%\n",count_arg_8, (double)count_arg_8 / total * 100.0);
-*/
+
 
 
     clock_t end_time = clock();
@@ -631,7 +633,7 @@ int main() {
     
     for (int i = 0; i < n_total; i++) {
         //printf("cluster_fixed[%d] = %d || cluster_float[%d] = %d || X_f[%d] = %d Y_f[%d] = %d\n", i, cluster_labels_fixed[i], i, cluster_labels[i], i, X_f[i], i, Y_f[i]);
-        printf("cluster_fixed[%d] = %d\n", i, cluster_labels_fixed[i]);
+        //printf("cluster_fixed[%d] = %d\n", i, cluster_labels_fixed[i]);
     }
 
 

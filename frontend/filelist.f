@@ -4,7 +4,6 @@ full_step_cluster_tb.sv
 full_step_tb.sv
 cluster_assign.sv
 cluster_assign_tb.sv
-full_step_tb.sv
 act_coord.sv
 act_coord_tb.sv
 step_tb.sv

@@ -1,7 +1,7 @@
 
 
 module full_step_cluster_tb #(
-    parameter int NB_POINTS    = 1100,              // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
+    parameter int NB_POINTS    = 100,              // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int NB_ITER      = 50,                // nombre d'itérations
 
     parameter int COORD_W      = 16,                // largeur des coordonnees

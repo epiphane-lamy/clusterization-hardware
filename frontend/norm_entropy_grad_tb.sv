@@ -215,15 +215,11 @@ module norm_entropy_grad_tb #(
                         out_j,
                         P_ij);
                 */
-                if (out_i == 0) begin
-                    $display("[%0t] RESULT i=%0d mult_act_X=%0d mult_act_Y=%0d",
-                            $time,
-                            out_i,
-                            mult_act_X,
-                            mult_act_Y);
-                end
-                $display("[%0t] Calcul terminé", $time);
-                break;
+                $display("[%0t] RESULT i=%0d mult_act_X=%0d mult_act_Y=%0d",
+                        $time,
+                        out_i,
+                        mult_act_X,
+                        mult_act_Y);
             end
             if (valid_entropy) begin
                 $display("[%0t] RESULT entropy i=%0d entropy=%0d",
@@ -231,11 +227,11 @@ module norm_entropy_grad_tb #(
                         out_i,
                         entropy);
             end
-            /*
+            
             if (done) begin
                 $display("[%0t] Calcul terminé", $time);
                 break;
-            end*/
+            end
         end
     endtask
 
