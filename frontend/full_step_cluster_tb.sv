@@ -474,7 +474,6 @@ module full_step_cluster_tb #(
 
         .addr_cluster  (addr_cluster_compute),
         .we_cluster    (we_cluster),
-        .cluster_in    (cluster_in),
         .valid_cluster (valid_cluster),
         .cluster_out   (cluster_out),
 
@@ -671,8 +670,8 @@ module full_step_cluster_tb #(
         addr_coord_tb_b1 = addr_task;
         addr_coord_tb_b2 = addr_task;
         @(posedge clk);
-        $display("lecture mémoire addr_coord_b1=%0d coord_X_b1=%0d coord_Y_b1=%0d addr_coord_b2=%0d coord_X_b2=%0d coord_Y_b2=%0d",
-        addr_coord_b1, coord_X_b1, coord_Y_b1, addr_coord_b2, coord_X_b2, coord_Y_b2);
+        $display("lecture mémoire addr_coord=%0d coord_X=%0d coord_Y=%0d",
+        addr_coord_b1, coord_X_b1, coord_Y_b1);
         control_mem_coord_b1 = 1;
         control_mem_coord_b2 = 1;
     endtask
@@ -809,7 +808,15 @@ module full_step_cluster_tb #(
         $display("%0d points chargés depuis cluster_fixed_full_benchmark.txt", addr_file);
 
 
-
+        /*
+        @(posedge clk);
+        for (int i = 0; i < NB_POINTS; i++) begin
+            read_memory_coord(i);
+        end
+        #10;
+        $display("\n=== Fin de la simulation ===");
+        $finish;
+        */
         
         // lancement calcul
         control_mem_coord_b1 = 1;

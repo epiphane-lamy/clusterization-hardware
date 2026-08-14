@@ -20,7 +20,6 @@ module cluster_assign #(
     output logic [ADDR_W-1:0] addr_cluster,
     output logic              we_cluster,
     input  logic              valid_cluster, // (=0 => cluster=-1 else !=-1)
-    input  logic [ADDR_W-1:0] cluster_in,
     output logic [ADDR_W-1:0] cluster_out,
 
     output logic done

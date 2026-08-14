@@ -59,7 +59,6 @@ module cluster_assign_tb #(
 
         .addr_cluster  (addr_cluster_compute),
         .we_cluster    (we_cluster),
-        .cluster_in    (cluster_in),
         .valid_cluster (valid_cluster),
         .cluster_out   (cluster_out),
 

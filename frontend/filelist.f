@@ -1,4 +1,6 @@
-//clusterization.sv
+clusterization_pkg.sv
+clusterization.sv
+clusterization_tb.sv
 memory_single_port.sv
 memory_cluster.sv
 full_step_cluster_tb.sv
