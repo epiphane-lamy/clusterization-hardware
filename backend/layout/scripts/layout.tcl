@@ -1,4 +1,3 @@
-# Last update: 2026/03/08 
 
 #----------------------------------------------------------------------------- 
 # Fetch Dynamic Environment Variables from Makefile
@@ -34,6 +33,9 @@ set_message -id IMPEXT-3493 -suppress
 set_message -id IMPEXT-6166 -suppress  
 set_message -id IMPSP-5217 -suppress  
 
+
+set_multi_cpu_usage -local_cpu 8
+
 #----------------------------------------------------------------------------- 
 # Initiates the design files (netlist, LEFs, timing libraries) 
 #----------------------------------------------------------------------------- 
@@ -45,7 +47,8 @@ read_physical -lef $LEF_LIST
 # Read from the dynamic Synthesis output directory
 read_netlist ../../synthesis/deliverables/${design}_${lib}_${freq}_0/${design}.v 
 init_design 
-
+check_design -type netlist
+check_design -type netlist -format detail
 #----------------------------------------------------------------------------- 
 # General settings 
 #----------------------------------------------------------------------------- 

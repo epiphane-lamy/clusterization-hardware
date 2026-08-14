@@ -69,6 +69,7 @@ set_db [get_db library_domain *$lib_type] .default true
 #-----------------------------------------------------------------------------
 # Analyze RTL source (manually set; file_list.tcl is not covered in ELC1054)
 #-----------------------------------------------------------------------------
+
 #set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
 #set rtl_files ${DESIGNS}.vhd
 #read_hdl -language vhdl $rtl_files
@@ -78,10 +79,26 @@ set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
 #read_hdl -language vhdl $rtl_files 
 #Da pra fazer um -f filelist
 # Read VHDL files
-#read_hdl -vhdl {}
+#read_hdl -vhdl {fpupack.vhd serial_mul.vhd pre_norm_mul.vhd post_norm_mul.vhd mul_24.vhd}
 
 # Read SystemVerilog files
-read_hdl -sv {counter.sv}
+read_hdl -sv {
+    clusterization_pkg.sv
+    clusterization.sv
+    memory_single_port.sv
+    memory_cluster.sv
+    cluster_assign.sv
+    act_coord.sv
+    ping_pong_arbitrer.sv
+    norm_entropy_grad.sv
+    inv_LUT.sv
+    dist_mat_arg_exp.sv
+    memory_dual_port.sv
+    exp_LUT.sv
+}
+
+
+
 
 
 #-----------------------------------------------------------------------------
@@ -131,6 +148,7 @@ syn_generic ${HDL_NAME}
 #-----------------------------------------------------------------------------
 syn_map ${HDL_NAME} 
 get_db insts .base_cell.name -u ;# List all cell names used in the current design.
+syn_opt ${HDL_NAME}
 
 #-----------------------------------------------------------------------------
 # Preparing and generating output data (reports, verilog netlist)

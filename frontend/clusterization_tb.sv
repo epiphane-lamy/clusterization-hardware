@@ -21,19 +21,17 @@ module clusterization_tb #(
     logic               rst_n;
     logic               start;
 
-    coord_mem_port_t    port_coord_b1_load;
     logic               control_mem_coord_load_b1;
-    logic               we_coord_tb_b1;
-    logic [ADDR_W-1:0]  addr_coord_tb_b1;
-    logic [COORD_W-1:0] data_in1_coord_tb_b1;
-    logic [COORD_W-1:0] data_in2_coord_tb_b1;
+    logic               we_coord_load_b1;
+    logic [ADDR_W-1:0]  addr_coord_load_b1;
+    logic [COORD_W-1:0] data_in1_coord_load_b1;
+    logic [COORD_W-1:0] data_in2_coord_load_b1;
 
-    coord_mem_port_t    port_coord_b2_load;
     logic               control_mem_coord_load_b2;
-    logic               we_coord_tb_b2;
-    logic [ADDR_W-1:0]  addr_coord_tb_b2;
-    logic [COORD_W-1:0] data_in1_coord_tb_b2;
-    logic [COORD_W-1:0] data_in2_coord_tb_b2;
+    logic               we_coord_load_b2;
+    logic [ADDR_W-1:0]  addr_coord_load_b2;
+    logic [COORD_W-1:0] data_in1_coord_load_b2;
+    logic [COORD_W-1:0] data_in2_coord_load_b2;
 
 
     logic [COORD_W-1:0] coord_X;
@@ -67,9 +65,16 @@ module clusterization_tb #(
         .start(start),
 
         .control_mem_coord_load_b1(control_mem_coord_load_b1),
+        .we_coord_load_b1         (we_coord_load_b1),
+        .addr_coord_load_b1       (addr_coord_load_b1),
+        .data_in1_coord_load_b1   (data_in1_coord_load_b1),
+        .data_in2_coord_load_b1   (data_in2_coord_load_b1),
+
         .control_mem_coord_load_b2(control_mem_coord_load_b2),
-        .port_coord_b1_load       (port_coord_b1_load),
-        .port_coord_b2_load       (port_coord_b2_load),
+        .we_coord_load_b2         (we_coord_load_b2),
+        .addr_coord_load_b2       (addr_coord_load_b2),
+        .data_in1_coord_load_b2   (data_in1_coord_load_b2),
+        .data_in2_coord_load_b2   (data_in2_coord_load_b2),
 
         .control_mem_cluster_read (control_mem_cluster_read),
         .addr_cluster_read        (addr_cluster_read),
@@ -78,44 +83,32 @@ module clusterization_tb #(
         .done                     (done)
     );
 
-
-    assign port_coord_b1_load.we       = we_coord_tb_b1;
-    assign port_coord_b1_load.addr     = addr_coord_tb_b1;
-    assign port_coord_b1_load.data_in1 = data_in1_coord_tb_b1;
-    assign port_coord_b1_load.data_in2 = data_in2_coord_tb_b1;
-
-
-    assign port_coord_b2_load.we       = we_coord_tb_b2;
-    assign port_coord_b2_load.addr     = addr_coord_tb_b2;
-    assign port_coord_b2_load.data_in1 = data_in1_coord_tb_b2;
-    assign port_coord_b2_load.data_in2 = data_in2_coord_tb_b2;
-
     // -------------------------------------------------------------------
     // Tasks write/read memory coord bloc exp (1) et bloc grad (2)
     // -------------------------------------------------------------------
     task write_memory_coord_b1(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
         control_mem_coord_load_b1 = 0;
-        we_coord_tb_b1            = 1;
-        addr_coord_tb_b1          = addr_task;
-        data_in1_coord_tb_b1      = data_in1_task;
-        data_in2_coord_tb_b1      = data_in2_task;
+        we_coord_load_b1            = 1;
+        addr_coord_load_b1          = addr_task;
+        data_in1_coord_load_b1      = data_in1_task;
+        data_in2_coord_load_b1      = data_in2_task;
 
         @(posedge clk);
 
-        we_coord_tb_b1            = 0;
+        we_coord_load_b1            = 0;
         control_mem_coord_load_b1 = 1;
     endtask
     
     task write_memory_coord_b2(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
         control_mem_coord_load_b2 = 0;
-        we_coord_tb_b2            = 1;
-        addr_coord_tb_b2          = addr_task;
-        data_in1_coord_tb_b2      = data_in1_task;
-        data_in2_coord_tb_b2      = data_in2_task;
+        we_coord_load_b2            = 1;
+        addr_coord_load_b2          = addr_task;
+        data_in1_coord_load_b2      = data_in1_task;
+        data_in2_coord_load_b2      = data_in2_task;
 
         @(posedge clk);
 
-        we_coord_tb_b2            = 0;
+        we_coord_load_b2            = 0;
         control_mem_coord_load_b2 = 1;
     endtask
 
@@ -123,11 +116,11 @@ module clusterization_tb #(
     task read_memory_coord(input logic [ADDR_W-1:0] addr_task);
         control_mem_coord_load_b1 = 0;
         control_mem_coord_load_b2 = 0;
-        addr_coord_tb_b1 = addr_task;
-        addr_coord_tb_b2 = addr_task;
+        addr_coord_load_b1 = addr_task;
+        addr_coord_load_b2 = addr_task;
         @(posedge clk);
         $display("lecture mémoire addr_coord_b1=%0d coord_X=%0d coord_Y=%0d",
-        addr_coord_tb_b1, coord_X, coord_Y);
+        addr_coord_load_b1, coord_X, coord_Y);
         control_mem_coord_load_b1 = 1;
         control_mem_coord_load_b2 = 1;
     endtask*/
@@ -135,8 +128,8 @@ module clusterization_tb #(
     task read_memory_coord(input logic [ADDR_W-1:0] addr_task);
         control_mem_coord_load_b1 = 0;
         control_mem_coord_load_b2 = 0;
-        addr_coord_tb_b1 = addr_task;
-        addr_coord_tb_b2 = addr_task;
+        addr_coord_load_b1 = addr_task;
+        addr_coord_load_b2 = addr_task;
         @(posedge clk);
         $display("lecture mémoire addr_task=%0d owner_b1=%0d addr_coord_b1(DUT)=%0d we_coord_b1(DUT)=%0d coord_X=%0d coord_Y=%0d",
             addr_task,
@@ -193,10 +186,10 @@ module clusterization_tb #(
 
         control_mem_coord_load_b1 =  0;
         control_mem_coord_load_b2 =  0;
-        we_coord_tb_b1            =  0;
-        we_coord_tb_b2            =  0;
-        addr_coord_tb_b1          = '0;
-        addr_coord_tb_b2          = '0;
+        we_coord_load_b1            =  0;
+        we_coord_load_b2            =  0;
+        addr_coord_load_b1          = '0;
+        addr_coord_load_b2          = '0;
 
         control_mem_cluster_read  =  1;
         addr_cluster_read    = '0;
@@ -232,14 +225,14 @@ module clusterization_tb #(
         $fclose(fd);
 
         $display("%0d points chargés depuis cluster_fixed_full_benchmark.txt", addr_file);
-        
+        /*
         @(posedge clk);
         for (int i = 0; i < NB_POINTS; i++) begin
             read_memory_coord(i);
         end
         #10;
         $display("\n=== Fin de la simulation ===");
-        $finish;
+        $finish;*/
         
         // lancement calcul
         control_mem_coord_load_b1 = 1;

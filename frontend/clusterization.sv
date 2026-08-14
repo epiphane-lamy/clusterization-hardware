@@ -1,7 +1,7 @@
-import clusterization_pkg::*;
+
 
 module clusterization #(
-    parameter int NB_POINTS    = clusterization_pkg::NB_POINTS,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
+    parameter int NB_POINTS    = 1250,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int NB_ITER      = 50,          // nombre d'itérations
     parameter int COORD_W      = 16,          // largeur des coordonnees
     parameter int ADDR_W       = $clog2(NB_POINTS),           // largeur des adresses points Xf
@@ -23,9 +23,19 @@ module clusterization #(
 
     // --- Port BRAM point (Xf / Yf) ---
     input  logic              control_mem_coord_load_b1,
-    input  coord_mem_port_t   port_coord_b1_load,
+
+    input  logic               we_coord_load_b1,
+    input  logic [ADDR_W-1:0]  addr_coord_load_b1,
+    input  logic [COORD_W-1:0] data_in1_coord_load_b1,
+    input  logic [COORD_W-1:0] data_in2_coord_load_b1,
+
     input  logic              control_mem_coord_load_b2,
-    input  coord_mem_port_t   port_coord_b2_load,
+
+    input  logic               we_coord_load_b2,
+    input  logic [ADDR_W-1:0]  addr_coord_load_b2,
+    input  logic [COORD_W-1:0] data_in1_coord_load_b2,
+    input  logic [COORD_W-1:0] data_in2_coord_load_b2,
+
 
     // --- Port BRAM cluster ---
     input  logic              control_mem_cluster_read,
@@ -35,6 +45,12 @@ module clusterization #(
     output logic              done // fin du clustering
     );
 
+    typedef struct packed {
+        logic                  we;
+        logic [ADDR_W-1:0]     addr;
+        logic [COORD_W-1:0]    data_in1;
+        logic [COORD_W-1:0]    data_in2;
+    } coord_mem_port_t;
 
     typedef enum logic [1:0] {
         OWNER_TB,
@@ -64,13 +80,13 @@ module clusterization #(
     // Déclaration des ports mémoire coord_b1
     // -------------------------------------------------------------------
     coord_owner_t     owner_b1;
-    coord_mem_port_t  port_compute_b1, port_act_b1, port_cluster_b1, port_mux_b1;
+    coord_mem_port_t  port_coord_b1_load, port_compute_b1, port_act_b1, port_cluster_b1, port_mux_b1;
 
     // -------------------------------------------------------------------
     // Déclaration des ports mémoire coord_b2
     // -------------------------------------------------------------------
     coord_owner_t     owner_b2;
-    coord_mem_port_t  port_compute_b2, port_act_b2, port_cluster_b2, port_mux_b2;
+    coord_mem_port_t  port_coord_b2_load, port_compute_b2, port_act_b2, port_cluster_b2, port_mux_b2;
     
     // -------------------------------------------------------------------
     // Déclaration bloc exp et annexes
@@ -498,7 +514,7 @@ module clusterization #(
                     cnt_done_b2 <= '0;
                 end else begin
                     start_b3 <= 1'b0;
-                    cnt_done_b2++;
+                    cnt_done_b2 <= cnt_done_b2 + 1'b1;
                 end
             end
         end
@@ -531,7 +547,7 @@ module clusterization #(
         end else begin
             start_compute_b1 <= 1'b0;
             if (done_act && (step_idx != NB_ITER)) begin
-                step_idx++;
+                step_idx <= step_idx + 1'b1;
                 start_compute_b1 <= 1'b1;
             end
         end
@@ -563,6 +579,10 @@ module clusterization #(
         else                       owner_b1 = OWNER_COMPUTE;
     end
 
+    assign port_coord_b1_load.we       = we_coord_load_b1;
+    assign port_coord_b1_load.addr     = addr_coord_load_b1;
+    assign port_coord_b1_load.data_in1 = data_in1_coord_load_b1;
+    assign port_coord_b1_load.data_in2 = data_in2_coord_load_b1;
 
     assign port_compute_b1.we       = 1'b0;               // bloc_exp ne fait que lire
     assign port_compute_b1.addr     = addr_coord_compute_b1;
@@ -594,6 +614,11 @@ module clusterization #(
         else                       owner_b2 = OWNER_COMPUTE;
     end
 
+
+    assign port_coord_b2_load.we       = we_coord_load_b2;
+    assign port_coord_b2_load.addr     = addr_coord_load_b2;
+    assign port_coord_b2_load.data_in1 = data_in1_coord_load_b2;
+    assign port_coord_b2_load.data_in2 = data_in2_coord_load_b2;
 
     assign port_compute_b2.we       = 1'b0;               // bloc_grad ne fait que lire
     assign port_compute_b2.addr     = addr_coord_compute_b2;

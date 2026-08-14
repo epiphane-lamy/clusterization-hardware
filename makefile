@@ -1,5 +1,3 @@
-# THIS MAKEFILE WAS MADE BY: Vinícius Rocca Ferrari dos Santos Lima
-
 # Define bash as the shell to allow module loading
 SHELL := /bin/bash
 
@@ -79,23 +77,139 @@ export NET_ONE = VDD
 export BUFFERS_CTS = CLKBUFX20 CLKBUFX16 CLKBUFX12 CLKBUFX8 CLKBUFX6 CLKBUFX4 CLKBUFX3 CLKBUFX2
 export INVERTERS_CTS = INVX20 CLKINVX20 INVX16 INVX12 INVX8 INVX6 INVX4 INVX3 INVX2 INVX1 INVXL
 
-#export LEFT_CORE_PINS = {a_i[0]} {a_i[1]} {a_i[2]} {a_i[3]} {a_i[4]} {a_i[5]} {a_i[6]} {a_i[7]}
-#export TOP_CORE_PINS = {b_i[0]} {b_i[1]} {b_i[2]} {b_i[3]} {b_i[4]} {b_i[5]} {b_i[6]} {b_i[7]}
-#export RIGHT_CORE_PINS = {sum_o[0]} {sum_o[1]} {sum_o[2]} {sum_o[3]} {sum_o[4]} {sum_o[5]} {sum_o[6]} {sum_o[7]}
-#export BOTTOM_CORE_PINS = carry_i carry_o clk rst_n
 
 # Pads of chip
-#export LEFT_CORE_PINS =
-#export TOP_CORE_PINS =
-#export RIGHT_CORE_PINS = {cnt[0]} {cnt[1]} {cnt[2]} {cnt[3]} {cnt[4]} {cnt[5]}
-#export BOTTOM_CORE_PINS = clk rst_n ena
+# ---------------- LEFT ----------------
+export LEFT_CORE_PINS = \
+    clk \
+    rst_n \
+    start
 
 
-# Pads of chip
-export LEFT_CORE_PINS = clk
-export TOP_CORE_PINS = rst_n ena
-export RIGHT_CORE_PINS = cnt[0] cnt[1] cnt[2]
-export BOTTOM_CORE_PINS = cnt[3] cnt[4] cnt[5]
+# ---------------- RIGHT ----------------
+export RIGHT_CORE_PINS = \
+    done \
+    control_mem_cluster_read \
+    addr_cluster_read[0] \
+    addr_cluster_read[1] \
+    addr_cluster_read[2] \
+    addr_cluster_read[3] \
+    addr_cluster_read[4] \
+    addr_cluster_read[5] \
+    addr_cluster_read[6] \
+    addr_cluster_read[7] \
+    addr_cluster_read[8] \
+    addr_cluster_read[9] \
+    addr_cluster_read[10] \
+    cluster_read[0] \
+    cluster_read[1] \
+    cluster_read[2] \
+    cluster_read[3] \
+    cluster_read[4] \
+    cluster_read[5] \
+    cluster_read[6] \
+    cluster_read[7] \
+    cluster_read[8] \
+    cluster_read[9] \
+    cluster_read[10]
+
+
+# ---------------- TOP ----------------
+export TOP_CORE_PINS = \
+    control_mem_coord_load_b1 \
+    we_coord_load_b1 \
+    addr_coord_load_b1[0] \
+    addr_coord_load_b1[1] \
+    addr_coord_load_b1[2] \
+    addr_coord_load_b1[3] \
+    addr_coord_load_b1[4] \
+    addr_coord_load_b1[5] \
+    addr_coord_load_b1[6] \
+    addr_coord_load_b1[7] \
+    addr_coord_load_b1[8] \
+    addr_coord_load_b1[9] \
+    addr_coord_load_b1[10] \
+    data_in1_coord_load_b1[0] \
+    data_in1_coord_load_b1[1] \
+    data_in1_coord_load_b1[2] \
+    data_in1_coord_load_b1[3] \
+    data_in1_coord_load_b1[4] \
+    data_in1_coord_load_b1[5] \
+    data_in1_coord_load_b1[6] \
+    data_in1_coord_load_b1[7] \
+    data_in1_coord_load_b1[8] \
+    data_in1_coord_load_b1[9] \
+    data_in1_coord_load_b1[10] \
+    data_in1_coord_load_b1[11] \
+    data_in1_coord_load_b1[12] \
+    data_in1_coord_load_b1[13] \
+    data_in1_coord_load_b1[14] \
+    data_in1_coord_load_b1[15] \
+    data_in2_coord_load_b1[0] \
+    data_in2_coord_load_b1[1] \
+    data_in2_coord_load_b1[2] \
+    data_in2_coord_load_b1[3] \
+    data_in2_coord_load_b1[4] \
+    data_in2_coord_load_b1[5] \
+    data_in2_coord_load_b1[6] \
+    data_in2_coord_load_b1[7] \
+    data_in2_coord_load_b1[8] \
+    data_in2_coord_load_b1[9] \
+    data_in2_coord_load_b1[10] \
+    data_in2_coord_load_b1[11] \
+    data_in2_coord_load_b1[12] \
+    data_in2_coord_load_b1[13] \
+    data_in2_coord_load_b1[14] \
+    data_in2_coord_load_b1[15]
+
+
+# ---------------- BOTTOM ----------------
+export BOTTOM_CORE_PINS = \
+    control_mem_coord_load_b2 \
+    we_coord_load_b2 \
+    addr_coord_load_b2[0] \
+    addr_coord_load_b2[1] \
+    addr_coord_load_b2[2] \
+    addr_coord_load_b2[3] \
+    addr_coord_load_b2[4] \
+    addr_coord_load_b2[5] \
+    addr_coord_load_b2[6] \
+    addr_coord_load_b2[7] \
+    addr_coord_load_b2[8] \
+    addr_coord_load_b2[9] \
+    addr_coord_load_b2[10] \
+    data_in1_coord_load_b2[0] \
+    data_in1_coord_load_b2[1] \
+    data_in1_coord_load_b2[2] \
+    data_in1_coord_load_b2[3] \
+    data_in1_coord_load_b2[4] \
+    data_in1_coord_load_b2[5] \
+    data_in1_coord_load_b2[6] \
+    data_in1_coord_load_b2[7] \
+    data_in1_coord_load_b2[8] \
+    data_in1_coord_load_b2[9] \
+    data_in1_coord_load_b2[10] \
+    data_in1_coord_load_b2[11] \
+    data_in1_coord_load_b2[12] \
+    data_in1_coord_load_b2[13] \
+    data_in1_coord_load_b2[14] \
+    data_in1_coord_load_b2[15] \
+    data_in2_coord_load_b2[0] \
+    data_in2_coord_load_b2[1] \
+    data_in2_coord_load_b2[2] \
+    data_in2_coord_load_b2[3] \
+    data_in2_coord_load_b2[4] \
+    data_in2_coord_load_b2[5] \
+    data_in2_coord_load_b2[6] \
+    data_in2_coord_load_b2[7] \
+    data_in2_coord_load_b2[8] \
+    data_in2_coord_load_b2[9] \
+    data_in2_coord_load_b2[10] \
+    data_in2_coord_load_b2[11] \
+    data_in2_coord_load_b2[12] \
+    data_in2_coord_load_b2[13] \
+    data_in2_coord_load_b2[14] \
+    data_in2_coord_load_b2[15]
 
 #-----------------------------------------------------------------------------
 # Directories & Modules
