@@ -6,6 +6,7 @@
 
 # Fichiers/dossiers générés frontend
 frontend/clusterization
+frontend/generate_synth_file_LUT
 frontend/hdl_temp/
 frontend/sdf_cmd_file.cmd
 frontend/simulation/
