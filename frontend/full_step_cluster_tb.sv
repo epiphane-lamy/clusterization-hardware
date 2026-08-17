@@ -806,7 +806,7 @@ module full_step_cluster_tb #(
         $fclose(fd);
 
         $display("%0d points chargés depuis cluster_fixed_full_benchmark.txt", addr_file);
-
+        
 
         /*
         @(posedge clk);

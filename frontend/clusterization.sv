@@ -630,6 +630,11 @@ module clusterization #(
     assign port_act_b2.data_in1 = coord_X_act;
     assign port_act_b2.data_in2 = coord_Y_act;
 
+    assign port_cluster_b2.we       = 1'b0;
+    assign port_cluster_b2.addr     = '0;
+    assign port_cluster_b2.data_in1 = '0;
+    assign port_cluster_b2.data_in2 = '0;
+
     assign port_mux_b2 = mux_coord_port(owner_b2, port_coord_b2_load, port_compute_b2, port_act_b2, port_cluster_b2);
 
     assign we_coord_b2       = port_mux_b2.we;
