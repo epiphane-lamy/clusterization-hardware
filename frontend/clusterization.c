@@ -221,6 +221,10 @@ int main() {
     int32_t max_H = 0;
     int32_t max_X_f = 0;
     int32_t min_X_f = 100000;
+    int32_t min_mult_act_X = 100000;
+    int32_t max_mult_act_X = 0;
+    int32_t max_mult_act_Y = 0;
+    int32_t min_mult_act_Y = 100000;
     long count_H_1 = 0;
     long count_H_2 = 0;
     long count_H_3 = 0;
@@ -499,6 +503,10 @@ int main() {
 
             int64_t mult_act_X = ((int64_t)forca[i] * grad_x[i]) >> 16;
             int64_t mult_act_Y = ((int64_t)forca[i] * grad_y[i]) >> 16;
+            if (mult_act_X > max_mult_act_X) max_mult_act_X = mult_act_X;
+            if (mult_act_Y > max_mult_act_Y) max_mult_act_Y = mult_act_Y;
+            if (mult_act_X < min_mult_act_X) min_mult_act_X = mult_act_X;
+            if (mult_act_Y < min_mult_act_Y) min_mult_act_Y = mult_act_Y;
 
             //if (step == 0) fprintf(f_act, "%d %d\n", mult_act_X, mult_act_Y);
 
@@ -536,6 +544,10 @@ int main() {
     printf("max_H : %d\n", max_H);
     printf("max_X_f : %d\n", max_X_f);
     printf("min_X_f : %d\n", min_X_f);
+    printf("min_mult_act_X : %d\n", min_mult_act_X);
+    printf("max_mult_act_X : %d\n", max_mult_act_X);
+    printf("min_mult_act_Y : %d\n", min_mult_act_Y);
+    printf("max_mult_act_Y : %d\n", max_mult_act_Y);
     printf("Distribution H_fixed:\n");
     printf("62659-63000 : %ld\n", count_H_1);
     printf("63000-63500 : %ld\n", count_H_2);
