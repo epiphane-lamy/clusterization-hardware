@@ -173,14 +173,12 @@ module norm_entropy_grad #(
     always_comb begin
         next_state = current_state;
         unique case (current_state)
-            //S_IDLE        : next_state = valid_sum_row_P ? S_COMPUTE_INV : S_IDLE;
             S_IDLE : next_state = start_pulse ? S_COMPUTE_INV : S_IDLE;
             S_COMPUTE_INV : next_state = S_INV_WAIT;
             S_INV_WAIT    : next_state = S_FETCH_I;
             S_FETCH_I     : next_state = S_FETCH_WAIT;
             S_FETCH_WAIT  : next_state = S_RUN;
             S_RUN         : next_state = (cnt_j == NB_POINTS - 1) ? S_DRAIN : S_RUN;
-            //S_DRAIN       : next_state = (drain_cnt == PIPE_DEPTH - 1) ? S_DONE : S_DRAIN;
             S_DRAIN : next_state = (last_mult_act_seen && last_entropy_seen) ? S_DONE : S_DRAIN;
             S_DONE        : next_state = S_IDLE;
             default       : next_state = S_IDLE;
@@ -336,31 +334,6 @@ module norm_entropy_grad #(
             coord_Y_d <= coord_Y;
             j_1       <= j_idx_d;
             valid_1   <= j_valid_d;
-            /*
-            if (j_valid_d && j_idx_d < 100 && debug_count < 100) begin
-                $display("[%0t] INPUT j=%0d P_ij=%0d sum_row_P_inv=%0d msb=%0d coord_X=%0d coord_Y=%0d",
-                    $time,
-                    j_idx_d,
-                    P_ij,
-                    sum_row_P_inv,
-                    msb,
-                    coord_X,
-                    coord_Y
-                );
-            end*/
-
-//--------------------------à décommenter si qqch ne va pas !--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            /*
-            if (valid_1 && j_idx_d < 100 && debug_count < 100) begin
-                $display("[%0t] RESULT i=%0d j=%0d P_ij=%0d P_ij_norm=%0d ",
-                    $time,
-                    (out_i - 1),
-                    j_1,
-                    P_ij,
-                    P_ij_norm
-                );
-            end*/
-
             
 
             // etage 1 : calcul de P_ij_norm * coord
@@ -393,7 +366,6 @@ module norm_entropy_grad #(
             if (valid_grad && (j_3 == NB_POINTS-1)) begin // à vérifier pour savoir si 
                 // etage 3 : calcul de grad_X et grad_Y
                 
-                //grad_X         <= P_dot_X - coord_X_i;
                 grad_X         <= $signed(P_dot_X[15:0]) - $signed({1'b0,coord_X_i});
                 grad_Y         <= $signed(P_dot_Y[15:0]) - $signed({1'b0,coord_Y_i});
                 j_4            <= j_3;
@@ -401,26 +373,9 @@ module norm_entropy_grad #(
             end else begin
                 valid_mult_act <= 1'b0;
             end
-            /*
-            $display("[%0t] test mult_act out_j=%0d mult_act_X=%0d mult_act_Y=%0d forca=%0d",
-                $time,
-                out_j,
-                mult_act_X,
-                mult_act_Y,
-                forca
-            );*/
 
             if (valid_mult_act) begin
-                /*
-                 $display("[%0t] test mult_act out_j=%0d mult_act_X=%0d mult_act_Y=%0d forca=%0d",
-                        $time,
-                        out_j,
-                        mult_act_X,
-                        mult_act_Y,
-                        forca
-                        );*/
                 // etage 4 : calcul de forca * grad_x_float
-                //mult_act_X <= (grad_X * forca) >> 16;
                 mult_act_X <= (grad_X * forca_s) >>> 16;
                 mult_act_Y <= (grad_Y * forca_s) >>> 16;
                 out_j      <= j_4;

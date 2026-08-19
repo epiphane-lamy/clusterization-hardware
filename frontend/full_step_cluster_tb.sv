@@ -285,7 +285,7 @@ module full_step_cluster_tb #(
 
 
     // -------------------------------------------------------------------
-    // Déclaration bloc ping_pong_arbitrer + doubles mémoires P_ij
+    // Déclaration bloc ping_pong_arbiter + doubles mémoires P_ij
     // -------------------------------------------------------------------
 
     logic                   we_P_ij_A;
@@ -330,9 +330,10 @@ module full_step_cluster_tb #(
     );
 
         // ping_pong_arbitrer
-    ping_pong_arbitrer #(
-        .COORD_W (COORD_W),
-        .ADDR_W (ADDR_W)
+    ping_pong_arbiter #(
+        .ADDR_W (ADDR_W),
+        .P_IJ_W (P_IJ_W),
+        .ADDR_P_IJ_W (ADDR_P_IJ_W)
     ) memory_P_ij_arbitrer (
         .clk(clk),
         .rst_n(rst_n),

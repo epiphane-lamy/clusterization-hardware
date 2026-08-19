@@ -10,7 +10,7 @@ cluster_assign_tb.sv
 act_coord.sv
 act_coord_tb.sv
 step_tb.sv
-ping_pong_arbitrer.sv
+ping_pong_arbiter.sv
 norm_entropy_grad.sv
 norm_entropy_grad_tb.sv
 inv_LUT.sv
