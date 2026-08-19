@@ -119,9 +119,26 @@ opt_design -post_cts -hold
 
 route_design 
 
+
+#----------------------------------------------------------------------------- 
+# Post-route optimization
+#----------------------------------------------------------------------------- 
+set_db timing_analysis_type ocv
+
+time_design -post_route
+time_design -post_route -hold
+
+opt_design -post_route
+opt_design -post_route -hold
+
+route_design
+
 #----------------------------------------------------------------------------- 
 # Post-route timing verification and output writing
 #----------------------------------------------------------------------------- 
+time_design -post_route 
+time_design -post_route -hold
+
 set_db timing_analysis_type ocv
 time_design -post_route 
 
