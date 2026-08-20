@@ -42,9 +42,29 @@ set slew_min_fall 0.164 ;# ns
 set slew_max_rise 0.264 ;# ns
 set slew_max_fall 0.252 ;# ns
 #
-set WORST_LIST {slow_vdd1v0_basicCells.lib} 
+set WORST_LIST {slow_vdd1v0_basicCells.lib}
 set BEST_LIST {fast_vdd1v2_basicCells.lib} 
+
+set WORST_LIST {
+    /home/epiphane/projets/LIBS/lib/slow_vdd1v0.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM_4096X32.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024X32.lib
+}
+set BEST_LIST {
+    fast_vdd1v2_basicCells.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM_4096X32.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024X32.lib
+}
+
 set LEF_LIST {gsclib045_tech.lef gsclib045_macro.lef}
+
+set LEF_LIST {
+    gsclib045_tech.lef
+    gsclib045_macro.lef
+    /home/epiphane/projets/LIBS/LEF/RAM2P_1024X32.lef
+    /home/epiphane/projets/LIBS/LEF/RAM_4096X32.lef
+}
+
 set WORST_CAP_LIST ${TECH_DIR}/gpdk045_v_6_0/soce/gpdk045.basic.CapTbl
 set QRC_LIST ${TECH_DIR}/gpdk045_v_6_0/qrc/rcworst/qrcTechFile
 
@@ -83,18 +103,18 @@ set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
 
 # Read SystemVerilog files
 read_hdl -sv {
-    clusterization_pkg.sv
-    clusterization.sv
-    memory_single_port.sv
-    memory_cluster.sv
-    cluster_assign.sv
-    act_coord.sv
-    ping_pong_arbiter.sv
-    norm_entropy_grad.sv
+    rtl/clusterization_pkg.sv
+    rtl/clusterization.sv
+    rtl/cluster_assign.sv
+    rtl/act_coord.sv
+    rtl/ping_pong_arbiter.sv
+    rtl/norm_entropy_grad.sv
     synth_files/inv_LUT_synth.sv
     synth_files/dist_mat_arg_exp_synth.sv
-    memory_dual_port.sv
     synth_files/exp_LUT_synth.sv
+    synth_files/memory_dual_port_synth.sv
+    synth_files/memory_single_port_synth.sv
+    synth_files/memory_cluster_synth.sv
 }
 
 
