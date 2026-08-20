@@ -1,60 +1,73 @@
+//=============================================================================
+// Module: act_coord  ("upd block")
+//
+// Applies the per-point update contribution (mult_act_X/Y, produced by the
+// grad block and staged in memory mult_upd) to the current coordinates, one
+// point at a time: coord_act = coord + mult_act.
+//
+// addr_coord / we_coord / coord_X_act / coord_Y_act are broadcast at the
+// toplevel to BOTH duplicated coordinate memories (the exp-side and
+// grad-side copies from ADR-0003) at once -- this is what keeps the two
+// copies identical without any extra synchronization step: this block reads
+// from one copy and writes the same update to both.
+//
+// Processes points sequentially through a plain FETCH/COMPUTE/WRITE loop
+// rather than a pipeline, unlike exp/grad -- because the same memory is
+// alternately read from and written to for each point.
+//
+// See docs/blocks/upd_block.md for the full block-level documentation.
+//=============================================================================
+
 
 module act_coord #(
-    parameter int NB_POINTS    = 8,           // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int COORD_W      = 16,           // largeur des coordonnees, fixed-point SIGNE
+    parameter int NB_POINTS    = 8,   // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
+    parameter int COORD_W      = 16,  // Coordinate width, signed fixed-point
     parameter int ADDR_W       = 7,
     parameter int ACT_W        = 32
     )(
-	input  logic               clk,
-	input  logic               rst_n,
-
-    input logic                start,     // lance le balayage complet d'un step
-
-    // --- Port BRAM point (adresse incrementee chaque cycle) ---
+    input  logic               clk,
+    input  logic               rst_n,
+ 
+    input logic                start,     // Launches the update pass over all NB_POINTS points
+ 
+    // --- Point coordinate BRAM port (broadcast write, see header) ---
     output logic [ADDR_W-1:0]  addr_coord,
-	output logic               we_coord,
+    output logic               we_coord,
     input  logic [COORD_W-1:0] coord_X,
     input  logic [COORD_W-1:0] coord_Y,
-
+ 
     output logic [COORD_W-1:0] coord_X_act,
     output logic [COORD_W-1:0] coord_Y_act,
-
-    // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
+ 
+    // --- mult_upd BRAM port ---
     output logic [ADDR_W-1:0]  addr_act,
     input  logic signed [ACT_W-1:0] mult_act_X,
     input  logic signed [ACT_W-1:0] mult_act_Y,
- 
     output logic done
 );
 
 
-
     // -------------------------------------------------------------------
-    // FSM de sequencement
+    // Sequencing FSM
     // -------------------------------------------------------------------
     typedef enum logic [2:0] {
-        S_IDLE,    // état initial
-        S_FETCH,   // emission addr = cnt_i pour lecture points + mult_act
-        S_COMPUTE, // calcul de l'actualisation
-        S_WRITE,   // emission addr = cnt_i pour écriture points + mult_act
-        S_DONE     // calcul terminé
+        S_IDLE,    // Idle, waiting for start
+        S_FETCH,   // Issue addr = cnt_i to read the current coordinate and mult_act
+        S_COMPUTE, // Compute the updated coordinate
+        S_WRITE,   // Issue addr = cnt_i to write the updated coordinate back
+        S_DONE     // Update pass complete
     } state_t;
- 
     state_t current_state, next_state;
- 
- 
     logic [ADDR_W-1:0] cnt_i;
-
  
     // -------------------------------------------------------------------
-    // Adressage BRAM points / valeur d'actualisation
+    // Point / mult_upd address generation
     // -------------------------------------------------------------------
     assign addr_coord = cnt_i;
     assign addr_act = cnt_i;
-
  
     // -------------------------------------------------------------------
-    // Gestiond du compteur j pour adressage
+    // i counter management
     // -------------------------------------------------------------------
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -71,7 +84,7 @@ module act_coord #(
                 end
  
                 default: begin
-                    // cnt_i fixe
+                    // cnt_i held
                 end
             endcase
         end
@@ -80,7 +93,7 @@ module act_coord #(
     assign we_coord = (current_state == S_WRITE) ? 1 : 0;
  
     // -------------------------------------------------------------------
-    // FSM : transitions
+    // FSM: transition logic
     // -------------------------------------------------------------------
     always_comb begin
         next_state = current_state;
@@ -103,7 +116,8 @@ module act_coord #(
 
 
     // -------------------------------------------------------------------
-    // Compute de l'actualisation des points
+    // Coordinate update: coord_act = coord + mult_act (see docs/blocks/
+    // upd_block.md).
     // -------------------------------------------------------------------
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin

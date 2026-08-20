@@ -61,11 +61,7 @@ module norm_entropy_grad_tb #(
 
         .P_IJ_W       (P_IJ_W),
         .ADDR_P_IJ_W  (ADDR_P_IJ_W),
-        .ADDR_LUT_INV (ADDR_LUT_INV),
-        
-        .STEP_W (STEP_W),
-        .K_W    (K_W),
-        .D2_W   (D2_W)
+        .ADDR_LUT_INV (ADDR_LUT_INV)
     ) dut_compute (
         .clk(clk),
         .rst_n(rst_n),
