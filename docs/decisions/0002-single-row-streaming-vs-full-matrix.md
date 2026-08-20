@@ -27,5 +27,5 @@ Option 2 : le bloc `exp` produit `P` ligne par ligne, consommée au fil de l'eau
 - Ce choix structure toute l'architecture mémoire du projet (voir [ADR-0003](0003-ping-pong-buffering.md) pour la suite directe de cette décision).
 
 **Négatives / limites**
-- Le simple enchaînement séquentiel (exp écrit → grad lit → exp écrit à nouveau) introduit un temps mort entre les deux blocs, qui a nécessité une solution complémentaire de recouvrement (voir ADR-0003).
-- Le calcul de la somme de normalisation d'une ligne, qui nécessitait auparavant une deuxième passe sur la matrice complète dans le modèle logiciel, doit être recalculé différemment pour rester compatible avec un flux ligne par ligne (accumulation à la volée par le bloc `exp`, voir ARCHITECTURE.md §6).
+- Le simple enchaînement séquentiel (exp écrit → grad lit → exp écrit à nouveau) introduit un temps mort entre les deux blocs, qui a nécessité une solution complémentaire de recouvrement (voir [ADR-0003](0003-ping-pong-buffering.md)).
+- Le calcul de la somme de normalisation d'une ligne, qui nécessitait auparavant une deuxième passe sur la matrice complète dans le modèle logiciel, doit être recalculé différemment pour rester compatible avec un flux ligne par ligne (accumulation à la volée par le bloc `exp`, voir [ARCHITECTURE.md](../ARCHITECTURE.md) §6).

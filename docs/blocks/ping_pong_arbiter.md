@@ -4,7 +4,7 @@ Arbitrates access to the two `P_ij` line buffers (memory A / memory B) that impl
 
 See [`ARCHITECTURE.md`](../ARCHITECTURE.md) §4 for the toplevel view of the ping-pong mechanism, and [ADR-0003](../decisions/0003-ping-pong-buffering.md) for the design rationale. This module is the direct RTL implementation of that decision.
 
-RTL: [`ping_pong_arbiter.sv`](../../rtl/ping_pong_arbiter.sv)
+RTL: [`ping_pong_arbiter.sv`](../../frontend/rtl/ping_pong_arbiter.sv)
 
 
 ---

@@ -4,7 +4,7 @@ Consumes one row of `P_ij` (produced by the `exp` block, buffered through the pi
 
 See [`ARCHITECTURE.md`](../ARCHITECTURE.md) for the toplevel view. Related decisions: [ADR-0001](../decisions/0001-fixed-point-quantization-chain.md) (quantization chain), [ADR-0002](../decisions/0002-single-row-streaming-vs-full-matrix.md) (row streaming), [ADR-0003](../decisions/0003-ping-pong-buffering.md) (ping-pong buffering), [ADR-0004](../decisions/0004-lut-exponential-vs-cordic.md) (LUT-based inverse), [ADR-0005](../decisions/0005-gini-entropy-vs-shannon.md) (Gini entropy).
 
-RTL: [`norm_entropy_grad.sv`](../../rtl/norm_entropy_grad.sv)
+RTL: [`norm_entropy_grad.sv`](../../frontend/rtl/norm_entropy_grad.sv)
 
 ---
 

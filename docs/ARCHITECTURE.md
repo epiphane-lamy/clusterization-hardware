@@ -2,7 +2,7 @@
 
 Ce document détaille le cheminement complet du projet : du modèle logiciel de référence fourni par le laboratoire jusqu'à l'architecture matérielle SystemVerilog qui en découle, en passant par la quantification et les arbitrages de conception. Pour une vue d'ensemble rapide, voir le [README](../README.md). Pour le détail argumenté de chaque choix fort, voir les [ADR](decisions/).
 
-> **Périmètre de ce document** : l'architecture toplevel et les décisions de conception qui la structurent. Le détail micro-architectural interne des blocs `exp` et `grad` (pipeline interne, timing exact des états) n'est pas couvert ici — ce sera documenté séparément une fois stabilisé.
+> **Périmètre de ce document** : architecture toplevel et décisions de conception qui structurent le projet. Le détail micro-architectural interne des blocs de calcul [exp](blocks/exp_block.md), [grad](blocks/grad_block.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) est couvert dans [blocks](blocks/).
 
 ---
 
@@ -24,7 +24,7 @@ C'est cette structure en deux temps — **la boucle itérative qui déplace les 
 
 ## 2. Le constat qui a orienté toute l'architecture : la matrice O(n²)
 
-En analysant le code de référence, le premier problème saute aux yeux : à chaque itération, l'algorithme construit et stocke intégralement une matrice `P` de taille `N × N`.
+En analysant le code de référence, le premier problème saute aux yeux : à chaque itération, l'algorithme construit et stocke intégralement une matrice `P` de taille `N × N` avec `N` le nombre de points du benchmark.
 
 Pour un jeu de test raisonnable de 1000 points, cela représente **1 000 000 de coefficients**. Même codés sur 16 bits (format Q0.16 après quantification), cela correspond à **2 Mo de mémoire, à reconstruire à chaque itération, pour une seule des N itérations de l'algorithme**. Sur une cible FPGA de taille modeste, ou a fortiori en vue d'un flot ASIC où chaque bit de mémoire a un coût en surface, cette approche telle quelle est inenvisageable.
 
@@ -48,7 +48,7 @@ Cette étape est traduite matériellement par le pipeline suivant, exécuté une
 
 ![Architecture matérielle toplevel, une itération](img/archi_part1.png)
 
-Le flux de données suit la même logique que le modèle logiciel (`exp` → matrice `P` → `grad` → mise à jour des coordonnées), mais **sans jamais matérialiser `P` en entier** : c'est tout l'objet du bloc `ping pong arbitrer` au centre du schéma, détaillé au §4.
+Le flux de données suit la même logique que le modèle logiciel (`exp` → matrice `P` → `grad` → mise à jour des coordonnées), mais **sans jamais matérialiser `P` en entier** : c'est tout l'objet du bloc `ping pong arbiter` au centre du schéma, détaillé au §4.
 
 ### Partie 2 — Association finale des clusters
 
@@ -58,9 +58,8 @@ Une fois les `N` itérations terminées, les coordonnées finales des points ont
 
 ![Architecture matérielle toplevel, association des clusters](img/archi_part2.png)
 
-Le détail interne du bloc `cluster assign` (comment les points sont regroupés et numérotés) n'est pas couvert dans ce document — il sera traité séparément.
 
-Un point de conception toplevel mérite cependant d'être noté ici : la mémoire `memory cluster` associe à chaque point son numéro de cluster, mais un point peut ne pas encore avoir été assigné. Là où le modèle logiciel de référence utilise une valeur sentinelle (`-1`) pour représenter cet état, l'architecture matérielle porte cette information via un **bit de validité dédié** (`valid_cluster`, visible sur le schéma ci-dessus) plutôt que par une valeur réservée dans le champ numéro-de-cluster. Voir [ADR-0006](decisions/0006-valid-bit-for-unassigned-cluster.md).
+Un point de conception toplevel mérite d'être noté ici : la mémoire `memory cluster` associe à chaque point son numéro de cluster, mais un point peut ne pas encore avoir été assigné. Là où le modèle logiciel de référence utilise une valeur sentinelle (`-1`) pour représenter cet état, l'architecture matérielle porte cette information via un **bit de validité dédié** (`valid_cluster`, visible sur le schéma ci-dessus) plutôt que par une valeur réservée dans le champ numéro-de-cluster. Voir [ADR-0006](decisions/0006-valid-bit-for-unassigned-cluster.md).
 
 ---
 
@@ -78,7 +77,7 @@ Cela fait chuter l'empreinte mémoire de `O(N²)` à `O(N)` — pour 1000 points
 
 Le simple enchaînement séquentiel décrit ci-dessus (exp écrit → grad lit → exp écrit à nouveau) introduit un temps mort important : `grad` doit attendre que `exp` ait fini d'écrire, et `exp` doit attendre que `grad` ait fini de lire avant de réutiliser le buffer.
 
-Pour recouvrir ces deux phases, l'architecture utilise **deux mémoires de ligne (A et B)** pilotées par un bloc `ping pong arbitrer` : pendant que `exp` écrit la ligne `i+1` dans la mémoire A, `grad` lit simultanément la ligne `i` (déjà produite) dans la mémoire B. Une fois les deux terminés, l'arbitre échange les rôles des deux mémoires, sans copie de données — seule la table d'aiguillage change.
+Pour recouvrir ces deux phases, l'architecture utilise **deux mémoires de ligne (A et B)** pilotées par un bloc `ping pong arbiter` : pendant que `exp` écrit la ligne `i+1` dans la mémoire A, `grad` lit simultanément la ligne `i` (déjà produite) dans la mémoire B. Une fois les deux terminés, l'arbitre échange les rôles des deux mémoires, sans copie de données — seule la table d'aiguillage change.
 
 Voir [ADR-0003](decisions/0003-ping-pong-buffering.md).
 
@@ -155,15 +154,8 @@ Voir [ADR-0001](decisions/0001-fixed-point-quantization-chain.md).
 
 La vérification du design suit deux niveaux, tous deux comparés au modèle de référence bit-exact décrit au §8 plutôt qu'à une resimulation flottante :
 
-- **Testbenchs unitaires**, un par bloc de calcul (`exp`, `grad`, `upd`, `ping pong arbitrer`, `cluster assign`, etc.), permettant d'isoler et de valider le comportement de chaque bloc indépendamment du reste de la chaîne — utile en particulier pour déboguer un bloc sans dépendre de la disponibilité ou de la correction des autres.
-- **Testbench d'intégration global**, exerçant l'ensemble du pipeline toplevel (les deux parties décrites au §3) sur un jeu de points complet, et comparant les résultats de bout en bout — coordonnées finales et clusters assignés — à ceux produits par le modèle de référence.
+- **Testbenchs unitaires**, un par bloc de calcul (`exp`, `grad`, `upd`, `cluster_assign`), permettant d'isoler et de valider le comportement de chaque bloc indépendamment du reste de la chaîne — utile en particulier pour déboguer un bloc sans dépendre de la disponibilité ou de la correction des autres.
+- **Testbench d'intégration global ou partiellement globel**, exerçant des ensembles ou la totalité du pipeline toplevel sur un jeu de points complet, et comparant les résultats de bout en bout — coordonnées finales et clusters assignés — à ceux produits par le modèle de référence.
 
 Dans les deux cas, la comparaison se fait directement contre les résultats intermédiaires produits par le modèle logiciel fixed-point (§8) : matrice `P` ligne par ligne, gradients, entropies, mises à jour de position. Un écart entre simulation RTL et modèle de référence est donc imputable sans ambiguïté au RTL, et non à un artefact de comparaison entre flottant et fixed-point.
 
-> Point d'attention pour la comparaison automatisée : le modèle de référence encode l'absence d'assignation de cluster par la valeur sentinelle `-1`, alors que le RTL l'encode par un bit de validité à 0 (voir [ADR-0006](decisions/0006-valid-bit-for-unassigned-cluster.md)). La comparaison doit traiter ces deux représentations comme équivalentes plutôt que comparer les champs bruts terme à terme.
-
-## 10. Prochaines étapes de documentation
-
-- Détail micro-architectural des blocs `exp` et `grad` (hors périmètre de ce document pour l'instant)
-- Détail du bloc `cluster assign`
-- Résultats de synthèse (ressources, fréquence max, latence par itération) une fois disponibles

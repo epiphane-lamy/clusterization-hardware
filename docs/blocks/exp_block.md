@@ -4,7 +4,7 @@ Produces one row of the unnormalized Gaussian-kernel similarity matrix `P` per s
 
 See [`ARCHITECTURE.md`](../ARCHITECTURE.md) for how this block fits in the toplevel pipeline. Related decisions: [ADR-0001](../decisions/0001-fixed-point-quantization-chain.md) (quantization chain), [ADR-0002](../decisions/0002-single-row-streaming-vs-full-matrix.md) (row streaming instead of full matrix), [ADR-0003](../decisions/0003-ping-pong-buffering.md) (ping-pong buffering, credit-based flow control), [ADR-0004](../decisions/0004-lut-exponential-vs-cordic.md) (LUT instead of CORDIC).
 
-RTL: [`dist_mat_arg_exp.sv`](../../rtl/dist_mat_arg_exp.sv)
+RTL: [`dist_mat_arg_exp.sv`](../../frontend/rtl/dist_mat_arg_exp.sv)
 
 ---
 

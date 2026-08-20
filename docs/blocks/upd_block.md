@@ -2,7 +2,7 @@
 
 Applies the per-point update contribution (`mult_act_X/Y`, produced by the `grad` block and staged in `memory mult_upd`) to the current coordinates, one point at a time, closing out the iteration. This is the `upd block` in [`ARCHITECTURE.md`](../ARCHITECTURE.md) §3.
 
-RTL: [`act_coord.sv`](../../rtl/act_coord.sv)
+RTL: [`act_coord.sv`](../../frontend/rtl/act_coord.sv)
 
 ## Role, and the duplicated-memory write
 
