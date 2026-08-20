@@ -212,7 +212,7 @@ module act_coord_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed.txt", "r");
+        fd = $fopen("data/cluster_fixed.txt", "r");
 
         if (fd == 0) begin
             $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
@@ -239,7 +239,7 @@ module act_coord_tb #(
         $display("%0d points chargés depuis cluster_fixed.txt", addr_file);
 
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("mult_act_fixed.txt", "r");
+        fd = $fopen("data/mult_act_fixed.txt", "r");
 
         if (fd == 0) begin
             $fatal(1, "Impossible d'ouvrir mult_act_fixed.txt");

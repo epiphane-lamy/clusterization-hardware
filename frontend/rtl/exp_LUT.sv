@@ -11,7 +11,7 @@ module exp_LUT #(
     logic [15:0] rom [0:10240];
 
     initial begin
-        $readmemh("exp_lut.hex", rom);
+        $readmemh("data/exp_lut.hex", rom);
     end
 
     always_ff @(posedge clk) begin

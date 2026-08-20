@@ -13,7 +13,7 @@ int main() {
 
     uint16_t exp_lut[LUT_SIZE];
 
-    //FILE *f_exp_LUT = fopen("exp_lut.hex","w");
+    //FILE *f_exp_LUT = fopen("../data/exp_lut.hex","w");
     
     for(int i=0;i<LUT_SIZE;i++)
     {
@@ -42,7 +42,7 @@ int main() {
     uint32_t inv[1024];
     uint32_t result_inv;
 
-    FILE *f_inv_LUT = fopen("inv_lut.hex","w");
+    FILE *f_inv_LUT = fopen("../data/inv_lut.hex","w");
 
     for(int i=0;i<1024;i++)
     {
@@ -61,7 +61,7 @@ int main() {
     // --- 1. DATA INGESTION (X, Y) ---
     printf("--- L.E.G.I.A.O. V3 [2D MODE]: PROCESSING PLANAR MAP ---\n");
 
-    FILE *file = fopen("cluster.txt", "r");
+    FILE *file = fopen("../data/cluster.txt", "r");
     if (file == NULL) {
         printf("Error while opening the file cluster.txt\n");
         return 1;
@@ -156,7 +156,7 @@ int main() {
         Y_f[i] = ((int16_t)Y_q[i]) << 8;
     }
 
-    FILE *f_fixed = fopen("cluster_fixed_full_benchmark.txt", "w");
+    FILE *f_fixed = fopen("../data/cluster_fixed_full_benchmark.txt", "w");
     if (f_fixed == NULL) {
         printf("Erreur lors de l'ouverture de cluster_fixed.txt\n");
         return 1;
@@ -243,9 +243,9 @@ int main() {
     long count_Hf_7 = 0;
     long count_Hf_8 = 0;
 
-    //FILE *f_P_ij_fixed = fopen("P_ij_fixed.txt", "w");
-    FILE *f_hex = fopen("k_step_rom.hex", "w");
-    //FILE *f_act = fopen("mult_act_fixed.txt", "w");
+    //FILE *f_P_ij_fixed = fopen("../data/P_ij_fixed.txt", "w");
+    FILE *f_hex = fopen("../data/k_step_rom.hex", "w");
+    //FILE *f_act = fopen("../data/mult_act_fixed.txt", "w");
 
     for (int step = 0; step < max_iter; step++) {
         double K_float = 1.0 / (2.0 * T_real * T_real);

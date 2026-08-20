@@ -9,7 +9,7 @@ int main() {
     // --- 1. INGESTÃO DE DADOS (X, Y) ---
     printf("--- L.E.G.I.A.O. V3 [MODO 2D]: PROCESSANDO MAPA PLANAR ---\n");
 
-    FILE *file = fopen("cluster.txt", "r");
+    FILE *file = fopen("../data/cluster.txt", "r");
     if (file == NULL) {
         printf("Erro na leitura: Nao foi possivel abrir o arquivo cluster.txt\n");
         return 1;

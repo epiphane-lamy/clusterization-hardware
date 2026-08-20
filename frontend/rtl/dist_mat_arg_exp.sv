@@ -74,7 +74,7 @@ module dist_mat_arg_exp #(
     // -------------------------------------------------------------------
     logic signed [K_W-1:0] K_rom [0:(2**STEP_W)-1];
     logic signed [K_W-1:0] K_step_r;
-    initial $readmemh("k_step_rom.hex", K_rom);
+    initial $readmemh("data/k_step_rom.hex", K_rom);
 
     // -------------------------------------------------------------------
     // Sequencing FSM

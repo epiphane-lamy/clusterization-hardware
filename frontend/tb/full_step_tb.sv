@@ -1,17 +1,19 @@
 
 
-module step_tb #(
-    parameter int NB_POINTS = 100,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int COORD_W   = 16,          // largeur des coordonnees, fixed-point SIGNE
-    parameter int ADDR_W    = 7,           // largeur des adresses points Xf
-    parameter int P_IJ_W       = 16,       // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = 7,        // largeur des adresses P_ij
-    parameter int ADDR_LUT_INV = 10,       // largeur des adresses LUT exp
-    parameter int ADDR_LUT_EXP = 14,       // largeur des adresses LUT exp
-    parameter int STEP_W    = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
-    parameter int K_W       = 16,          // largeur de la constante K_step precalculee (signee, negative)
-    parameter int SQ_W      = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
-    parameter int D2_W      = SQ_W + 1     // D2 = x2 + y2
+module full_step_tb #(
+    parameter int NB_POINTS    = 100,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
+    parameter int NB_ITER      = 50,          // nombre d'itérations
+    parameter int COORD_W      = 16,          // largeur des coordonnees
+    parameter int ADDR_W       = 7,           // largeur des adresses points Xf
+    parameter int P_IJ_W       = 16,          // largeur des P_ij, fixed-point SIGNE
+    parameter int ADDR_P_IJ_W  = 7,           // largeur des adresses P_ij
+    parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
+    parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
+    parameter int ACT_W        = 32,          // largeur des valeurs d'actualisation, fixed-point SIGNE
+    parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
+    parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
+    parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
+    parameter int D2_W         = SQ_W + 1     // D2 = x2 + y2
 	);
 
     logic       clk;
@@ -21,7 +23,9 @@ module step_tb #(
     // -------------------------------------------------------------------
     // Déclaration bloc exp et annexes
     // -------------------------------------------------------------------
-    logic              start;     // lance le balayage complet d'un step
+    logic              start_b1;     // lance le balayage complet d'un step
+    logic              start_tb_b1;
+    logic              start_compute_b1;
     logic [STEP_W-1:0] step_idx;  // index de l'iteration courante
 
     // --- Port BRAM point (adresse incrementee chaque cycle) ---
@@ -63,7 +67,7 @@ module step_tb #(
         .clk(clk),
         .rst_n(rst_n),
 
-        .start(start),
+        .start(start_b1),
         .step_idx(step_idx),
 
         .addr(addr_coord_compute_b1),
@@ -87,8 +91,11 @@ module step_tb #(
 
     // memory access
     logic               we_coord_b1;
-    logic [COORD_W-1:0] data_in1_b1;
-    logic [COORD_W-1:0] data_in2_b1;
+    logic               we_coord_tb_b1;
+    logic [COORD_W-1:0] data_in1_coord_b1;
+    logic [COORD_W-1:0] data_in2_coord_b1;
+    logic [COORD_W-1:0] data_in1_coord_tb_b1;
+    logic [COORD_W-1:0] data_in2_coord_tb_b1;
     
 
     // DUT memory coord points
@@ -101,8 +108,8 @@ module step_tb #(
 
         .we(we_coord_b1),
         .addr(addr_coord_b1),
-        .data_in1(data_in1_b1),
-        .data_in2(data_in2_b1),
+        .data_in1(data_in1_coord_b1),
+        .data_in2(data_in2_coord_b1),
 
         .data_out1(coord_X_b1),
         .data_out2(coord_Y_b1)
@@ -127,7 +134,7 @@ module step_tb #(
 
     logic              control_mem_coord_b2;
     logic [ADDR_W-1:0] addr_coord_tb_b2;
-    logic [ADDR_W-1:0] addr_compute_coord_b2;
+    logic [ADDR_W-1:0] addr_coord_compute_b2;
 
 
     // --- Port BRAM P_ij ---
@@ -143,6 +150,7 @@ module step_tb #(
     logic signed [31:0]            mult_act_X;
     logic signed [31:0]            mult_act_Y;
     logic [ADDR_P_IJ_W-1:0] addr_act;
+    logic [ADDR_P_IJ_W-1:0] addr_act_b2;
     logic                   valid_out_b2;
     
     logic [31:0] entropy;
@@ -167,7 +175,7 @@ module step_tb #(
         .clk(clk),
         .rst_n(rst_n),
 
-        .addr(addr_compute_coord_b2),
+        .addr(addr_coord_compute_b2),
         .coord_X(coord_X_b2),
         .coord_Y(coord_Y_b2),
         
@@ -179,7 +187,7 @@ module step_tb #(
 
         .mult_act_X(mult_act_X),
         .mult_act_Y(mult_act_Y),
-        .addr_act(addr_act),
+        .addr_act(addr_act_b2),
         .valid_out(valid_out_b2),
 
         .sum_row_P(sum_row_P),
@@ -193,8 +201,11 @@ module step_tb #(
     );
 
     logic               we_coord_b2;
+    logic               we_coord_tb_b2;
     logic [COORD_W-1:0] data_in1_coord_b2;
     logic [COORD_W-1:0] data_in2_coord_b2;
+    logic [COORD_W-1:0] data_in1_coord_tb_b2;
+    logic [COORD_W-1:0] data_in2_coord_tb_b2;
     
 
     // Memory coord pour le bloc grad
@@ -274,9 +285,10 @@ module step_tb #(
     );
 
         // ping_pong_arbitrer
-    ping_pong_arbitrer #(
-        .COORD_W (COORD_W),
-        .ADDR_W (ADDR_W)
+    ping_pong_arbiter #(
+        .ADDR_W      (ADDR_W),
+        .P_IJ_W      (P_IJ_W),
+        .ADDR_P_IJ_W (ADDR_P_IJ_W)
     ) memory_P_ij_arbitrer (
         .clk(clk),
         .rst_n(rst_n),
@@ -310,47 +322,189 @@ module step_tb #(
 
 
     // -------------------------------------------------------------------
+    // Déclaration bloc d'actualisation + mémoire actualisation
+    // -------------------------------------------------------------------
+
+    logic              start_b3;     // lance le balayage complet d'un step
+
+    // --- Port BRAM point (adresse incrementee chaque cycle) ---
+
+    logic [ADDR_W-1:0] addr_coord_b3;
+
+	logic              we_coord_b3;
+
+
+    logic [COORD_W-1:0] coord_X_act;
+    logic [COORD_W-1:0] coord_Y_act;
+
+    // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
+    logic               control_mem_b3;
+    logic [ADDR_W-1:0]  addr_act_b3;
+    logic signed [31:0] mult_act_X_mem;
+    logic signed [31:0] mult_act_Y_mem;
+
+    logic done_act;
+
+    // DUT
+    act_coord #(
+        .NB_POINTS (NB_POINTS),
+        .COORD_W   (COORD_W),
+        .ADDR_W    (ADDR_W)
+    ) dut_compute (
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .start(start_b3),
+
+        .addr_coord(addr_coord_b3),
+        .we_coord(we_coord_b3),
+
+        .coord_X(coord_X_b1),
+        .coord_Y(coord_Y_b1),
+
+        .coord_X_act(coord_X_act),
+        .coord_Y_act(coord_Y_act),
+
+        .addr_act(addr_act_b3),
+        .mult_act_X(mult_act_X_mem),
+        .mult_act_Y(mult_act_Y_mem),
+
+        .done(done_act)
+    );
+
+    // memory mult_act
+    memory_dual_port #(
+        .ADDR_W (ADDR_W),
+        .DATA_W (ACT_W)
+    ) memory_act (
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .we(valid_out_b2),
+        .addr(addr_act),
+        .data_in1(mult_act_X),
+        .data_in2(mult_act_Y),
+
+        .data_out1(mult_act_X_mem),
+        .data_out2(mult_act_Y_mem)
+    );
+
+    logic [7:0] cnt_done_b2;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            start_b3    <= 1'b0;
+            cnt_done_b2 <= '0;
+        end else begin
+            start_b3 <= 1'b0;
+            if (done_b2) begin
+                if (cnt_done_b2 == NB_POINTS - 1) begin
+                    start_b3    <= 1'b1;
+                    cnt_done_b2 <= '0;
+                end else begin
+                    start_b3 <= 1'b0;
+                    cnt_done_b2++;
+                end
+            end
+        end
+    end
+
+
+
+    // if start_b3 alors le bloc 3 fait ses calculs -> basculement des droits d'ecriture et de lecture sur 
+    // les 2 memoires coord pour qu'il les modifie et aussi lui donner acces a la memoire act en lecture
+
+    // une fois qu'il a terminé alors son signal done_b3 peut etre utilisé pour le relancer un calcul sur une step
+    // via l'input start_b1 et permet en même temps de rebasculer les droits w/r sur les blocs exp et grad
+    
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            control_mem_b3 <= 1'b0;
+        end else begin
+            if (start_b3) control_mem_b3 <= 1'b1;
+            if (done_act) control_mem_b3 <= 1'b0;
+        end
+    end
+
+    assign addr_act = (control_mem_b3) ? addr_act_b3 : addr_act_b2;
+
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            step_idx <= '0;
+            start_compute_b1 <= 1'b0;
+        end else begin
+            start_compute_b1 <= 1'b0;
+            if (done_act && (step_idx != NB_ITER)) begin
+                step_idx++;
+                start_compute_b1 <= 1'b1;
+            end
+        end
+    end
+
+    assign start_b1 = start_tb_b1 || start_compute_b1;
+
+
+
+    // -------------------------------------------------------------------
     // write memory task coord bloc exp (1) et bloc grad (2)
     // -------------------------------------------------------------------
     task write_memory_coord_b1(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
         control_mem_coord_b1   = 0;
-        we_coord_b1      = 1;
+        we_coord_tb_b1      = 1;
         addr_coord_tb_b1 = addr_task;
-        data_in1_b1      = data_in1_task;
-        data_in2_b1      = data_in2_task;
+        data_in1_coord_tb_b1      = data_in1_task;
+        data_in2_coord_tb_b1      = data_in2_task;
 
         @(posedge clk);
 
-        we_coord_b1    = 0;
+        we_coord_tb_b1    = 0;
         control_mem_coord_b1 = 1;
     endtask
 
     always_comb begin
-        addr_coord_b1 = (control_mem_coord_b1 == 1) ? addr_coord_compute_b1 : addr_coord_tb_b1;
+        addr_coord_b1     = (control_mem_coord_b1 == 1) ? ((control_mem_b3) ? addr_coord_b3 : addr_coord_compute_b1) : addr_coord_tb_b1;
+        we_coord_b1       = (control_mem_b3 == 1) ? we_coord_b3 : we_coord_tb_b1;
+        data_in1_coord_b1 = (control_mem_b3 == 1) ? coord_X_act : data_in1_coord_tb_b1;
+        data_in2_coord_b1 = (control_mem_b3 == 1) ? coord_Y_act : data_in2_coord_tb_b1;
     end
 
     task write_memory_coord_b2(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
         control_mem_coord_b2 = 0;
-        we_coord_b2          = 1;
+        we_coord_tb_b2       = 1;
         addr_coord_tb_b2     = addr_task;
-        data_in1_coord_b2    = data_in1_task;
-        data_in2_coord_b2    = data_in2_task;
+        data_in1_coord_tb_b2    = data_in1_task;
+        data_in2_coord_tb_b2    = data_in2_task;
 
         @(posedge clk);
 
-        we_coord_b2          = 0;
+        we_coord_tb_b2       = 0;
         control_mem_coord_b2 = 1;
     endtask
 
     always_comb begin
-        addr_coord_b2 = (control_mem_coord_b2 == 1) ? addr_compute_coord_b2 : addr_coord_tb_b2;
+        //addr_coord_b2 = (control_mem_coord_b2 == 1) ? addr_coord_compute_b2 : addr_coord_tb_b2;
+        addr_coord_b2 = (control_mem_coord_b2 == 1) ? ((control_mem_b3) ? addr_coord_b3 : addr_coord_compute_b2) : addr_coord_tb_b2;
+        we_coord_b2   = (control_mem_b3 == 1) ? we_coord_b3 : we_coord_tb_b2;
+        data_in1_coord_b2 = (control_mem_b3 == 1) ? coord_X_act : data_in1_coord_tb_b2;
+        data_in2_coord_b2 = (control_mem_b3 == 1) ? coord_Y_act : data_in2_coord_tb_b2;
     end
 
 
+    task read_memory_coord(input logic [ADDR_W-1:0] addr_task);
+        control_mem_coord_b1 = 0;
+        control_mem_coord_b2 = 0;
+        addr_coord_tb_b1 = addr_task;
+        addr_coord_tb_b2 = addr_task;
+        @(posedge clk);
+        $display("lecture mémoire addr_coord_b1=%0d coord_X_b1=%0d coord_Y_b1=%0d addr_coord_b2=%0d coord_X_b2=%0d coord_Y_b2=%0d",
+        addr_coord_b1, coord_X_b1, coord_Y_b1, addr_coord_b2, coord_X_b2, coord_Y_b2);
+        control_mem_coord_b1 = 1;
+        control_mem_coord_b2 = 1;
+    endtask
 
 
 
-    logic [7:0] cnt_done_b2;
+
     task automatic monitor_results();
         int result_count = 0;
 
@@ -378,8 +532,12 @@ module step_tb #(
                         mult_act_X,
                         mult_act_Y);
             end
-            if (done_b2) begin
-                cnt_done_b2++;
+
+            if (we_coord_b3) begin
+                $display("[%0t] RESULT coord_act coord_X_act=%0d coord_Y_act=%0d",
+                        $time,
+                        coord_X_act,
+                        coord_Y_act);
             end
         end
     endtask
@@ -390,6 +548,7 @@ module step_tb #(
     int ret;
     int xf, yf;
     int addr_file;
+    int addr_mem_coord;
     initial begin
 
 
@@ -398,17 +557,15 @@ module step_tb #(
         // init
         clk                  =  0;
         rst_n                =  0;
-        we_coord_b1          =  0;
-        we_coord_b2          =  0;
+        we_coord_tb_b1          =  0;
+        we_coord_tb_b2          =  0;
         addr_coord_tb_b1     = '0;
         addr_coord_tb_b2     = '0;
         control_mem_coord_b1 =  0;
         control_mem_coord_b2 =  0;
 
-        cnt_done_b2 = 0;
 
-        start       =  0;
-        step_idx    = '0;
+        start_tb_b1       =  0;
 
         fork
             monitor_results();
@@ -419,7 +576,7 @@ module step_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed.txt", "r");
+        fd = $fopen("data/cluster_fixed.txt", "r");
 
         if (fd == 0) begin
             $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
@@ -452,14 +609,23 @@ module step_tb #(
         // lancement calcul
         control_mem_coord_b1 = 1;
         control_mem_coord_b2 = 1;
-        start = 1;
+        start_tb_b1 = 1;
         @(posedge clk);
-        start = 0;
+        start_tb_b1 = 0;
 
 
         // attente de fin du calcul 2 premières lignes
-        wait (cnt_done_b2 == 3);
+        // wait (cnt_done_b2 == 3);
+        //wait (done_act);
+        wait (step_idx == 50);
 
+        /*
+        addr_mem_coord = 0;
+        while (addr_mem_coord < 100) begin
+            read_memory_coord(addr_mem_coord);
+            addr_mem_coord++;
+        end
+        */
         #10;
         $display("\n=== Fin de la simulation ===");
         $finish;

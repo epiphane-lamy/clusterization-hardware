@@ -91,10 +91,10 @@ read_hdl -sv {
     act_coord.sv
     ping_pong_arbiter.sv
     norm_entropy_grad.sv
-    inv_LUT_synth.sv
-    dist_mat_arg_exp_synth.sv
+    synth_files/inv_LUT_synth.sv
+    synth_files/dist_mat_arg_exp_synth.sv
     memory_dual_port.sv
-    exp_LUT_synth.sv
+    synth_files/exp_LUT_synth.sv
 }
 
 

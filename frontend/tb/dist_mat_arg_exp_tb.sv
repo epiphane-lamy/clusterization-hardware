@@ -213,7 +213,7 @@ module dist_mat_arg_exp_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed.txt", "r");
+        fd = $fopen("data/cluster_fixed.txt", "r");
 
         if (fd == 0) begin
             $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");

@@ -109,6 +109,7 @@ module full_step_cluster_tb #(
         .NB_POINTS (NB_POINTS),
         .COORD_W   (COORD_W),
         .ADDR_W    (ADDR_W),
+        .ADDR_P_IJ_W    (ADDR_P_IJ_W),
         .ADDR_LUT_EXP    (ADDR_LUT_EXP),
         .STEP_W    (STEP_W),
         .K_W       (K_W)
@@ -779,7 +780,7 @@ module full_step_cluster_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd = $fopen("cluster_fixed_full_benchmark.txt", "r");
+        fd = $fopen("data/cluster_fixed_full_benchmark.txt", "r");
 
         if (fd == 0) begin
             $fatal(1, "Impossible d'ouvrir cluster_fixed_full_benchmark.txt");
@@ -839,8 +840,8 @@ module full_step_cluster_tb #(
         end
 
 
-        fd_cluster = $fopen("resultats.txt", "w");
-        fd         = $fopen("cluster_fixed_full_benchmark.txt", "r");
+        fd_cluster = $fopen("data/resultats.txt", "w");
+        fd         = $fopen("data/cluster_fixed_full_benchmark.txt", "r");
 
         if (fd_cluster == 0) begin
             $display("Erreur : impossible d'ouvrir le fichier");

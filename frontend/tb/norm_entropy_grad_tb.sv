@@ -275,7 +275,7 @@ module norm_entropy_grad_tb #(
         @(posedge clk);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd_coord = $fopen("cluster_fixed.txt", "r");
+        fd_coord = $fopen("data/cluster_fixed.txt", "r");
 
         if (fd_coord == 0) begin
             $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
@@ -302,7 +302,7 @@ module norm_entropy_grad_tb #(
         $display("%0d points chargés depuis cluster_fixed.txt", addr_file);
         
         // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
-        fd_P_ij = $fopen("P_ij_fixed.txt", "r");
+        fd_P_ij = $fopen("data/P_ij_fixed.txt", "r");
 
         if (fd_P_ij == 0) begin
             $fatal(1, "Impossible d'ouvrir P_ij_fixed.txt");
