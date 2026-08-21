@@ -60,9 +60,16 @@ export slew_max_fall = 0.252
 #-----------------------------------------------------------------------------
 # TECH Custom Variables
 #-----------------------------------------------------------------------------
-export WORST_LIST = $(LIB_DIR)/slow_vdd1v0_basicCells.lib
-export BEST_LIST = $(LIB_DIR)/fast_vdd1v2_basicCells.lib
-export LEF_LIST = $(LEF_DIR)/gsclib045_tech.lef $(LEF_DIR)/gsclib045_macro.lef
+export WORST_LIST = $(LIB_DIR)/slow_vdd1v0_basicCells.lib \
+                    /home/epiphane/projets/LIBS/lib/ram/RAM_4096x32.lib \
+                    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024x32.lib
+export BEST_LIST = $(LIB_DIR)/fast_vdd1v2_basicCells.lib \
+                   /home/epiphane/projets/LIBS/lib/ram/RAM_4096x32.lib \
+                   /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024x32.lib
+export LEF_LIST = $(LEF_DIR)/gsclib045_tech.lef \
+                  $(LEF_DIR)/gsclib045_macro.lef \
+                  /home/epiphane/projets/LIBS/LEF/RAM2P_1024X32.lef \
+                  /home/epiphane/projets/LIBS/LEF/RAM_4096X32.lef
 export WORST_CAP_LIST = $(TECH_DIR)/gpdk045_v_6_0/soce/gpdk045.basic.CapTbl
 export QRC_LIST = $(TECH_DIR)/gpdk045_v_6_0/qrc/rcworst/qrcTechFile
 export CAP_MAX = $(WORST_CAP_LIST)

@@ -642,6 +642,19 @@ int main() {
         num_clusters_fixed++;
     }
 
+    FILE *file_in = fopen("../data/cluster.txt", "r");
+    FILE *file_out = fopen("../data/resultats_c.txt", "w");
+    double val3_old;
+    int i = 0;
+    // Lecture ligne par ligne des 3 valeurs et remplacement de la 3ème
+    while (fscanf(file_in, "%lf %lf %lf", &val1, &val2, &val3_old) == 3) {
+        fprintf(file_out, "%.14f %.14f %d\n", val1, val2, cluster_labels_fixed[i]);
+        i++;
+    }
+
+    fclose(file_in);
+    fclose(file_out);
+
     
     for (int i = 0; i < n_total; i++) {
         //printf("cluster_fixed[%d] = %d || cluster_float[%d] = %d || X_f[%d] = %d Y_f[%d] = %d\n", i, cluster_labels_fixed[i], i, cluster_labels[i], i, X_f[i], i, Y_f[i]);

@@ -69,7 +69,8 @@ connect_global_net $NET_ZERO -type tie_lo  -pin $NET_ZERO -inst *
 # Specify floorplan and pins
 #----------------------------------------------------------------------------- 
 create_floorplan -core_margins_by die -core_density_size 1 0.7 2.5 2.5 2.5 2.5
-
+gui_show
+suspend
 check_floorplan
 
 edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -side Left -layer 1 -spread_type center -spacing 1.0 -pin $LEFT_CORE_PINS 
@@ -93,6 +94,15 @@ route_special -connect core_pin -layer_change_range { Metal1(1) Metal11(11) } -b
 #----------------------------------------------------------------------------- 
 # Placement, CTS, and Routing
 #----------------------------------------------------------------------------- 
+# 1. Automatic placement of macros (RAMs)
+#plan_design
+
+# 2. Re-alignment to the manufacturing grid
+#snap_object -grid manufacturing [get_cells -filter "is_macro==true"]
+
+# 3. Lock RAM positions before global placement
+#set_db [get_db insts -if {.is_macro == true}] .status fixed
+
 place_opt_design 
 set_db extract_rc_engine pre_route
 extract_rc 

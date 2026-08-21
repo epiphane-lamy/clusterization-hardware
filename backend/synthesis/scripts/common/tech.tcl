@@ -8,6 +8,9 @@ get_db library_domains *
 set WORST_LIST {slow_vdd1v0_basicCells.lib} 
 set BEST_LIST {fast_vdd1v2_basicCells.lib} 
 set LEF_LIST {gsclib045_tech.lef gsclib045_macro.lef}
+set WORST_LIST $env(WORST_LIST)
+set BEST_LIST $env(BEST_LIST)
+set LEF_LIST $env(LEF_LIST)
 set WORST_CAP_LIST ${TECH_DIR}/gpdk045_v_6_0/soce/gpdk045.basic.CapTbl
 set QRC_LIST ${TECH_DIR}/gpdk045_v_6_0/qrc/rcworst/qrcTechFile
 

@@ -47,13 +47,13 @@ set BEST_LIST {fast_vdd1v2_basicCells.lib}
 
 set WORST_LIST {
     /home/epiphane/projets/LIBS/lib/slow_vdd1v0.lib
-    /home/epiphane/projets/LIBS/lib/ram/RAM_4096X32.lib
-    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024X32.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM_4096x32.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024x32.lib
 }
 set BEST_LIST {
     fast_vdd1v2_basicCells.lib
-    /home/epiphane/projets/LIBS/lib/ram/RAM_4096X32.lib
-    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024X32.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM_4096x32.lib
+    /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024x32.lib
 }
 
 set LEF_LIST {gsclib045_tech.lef gsclib045_macro.lef}

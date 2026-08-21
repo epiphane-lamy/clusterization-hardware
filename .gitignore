@@ -9,9 +9,8 @@ backend/synthesis/deliverables/
 # Fichiers .out
 *.out
 
-innovus.cmd
-innovus.log
-innovus.logv
+# Innovus generated files
+innovus*
 
 # Fichiers/dossiers générés frontend
 frontend/clusterization
