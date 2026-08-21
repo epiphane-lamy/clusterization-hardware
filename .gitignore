@@ -12,6 +12,9 @@ backend/synthesis/deliverables/
 # Innovus generated files
 innovus*
 
+# Innovus generated files
+genus*
+
 # Fichiers/dossiers générés frontend
 frontend/clusterization
 frontend/generate_synth_file_LUT
