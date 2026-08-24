@@ -1,31 +1,31 @@
-# ADR-0001 — Quantification fixed-point étage par étage, avec modèle de référence bit-exact
+# ADR-0001 — Stage-by-stage fixed-point quantization, with a bit-exact reference model
 
-## Statut
-Retenu
+## Status
+Accepted
 
-## Contexte
-Le modèle logiciel de référence effectue tous ses calculs en flottant double précision (distance euclidienne, argument gaussien, exponentielle, normalisation, gradient, mise à jour de position). Une implémentation matérielle flottante de cette chaîne est disproportionnée en surface et en consommation par rapport au besoin réel de précision de l'algorithme.
+## Context
+The reference software model performs all its calculations using double-precision floating-point arithmetic (Euclidean distance, Gaussian argument, exponential, normalization, gradient, position update). A floating-point hardware implementation of this pipeline would be disproportionate in terms of area and power consumption compared to the actual precision requirements of the algorithm.
 
-## Options considérées
+## Options considered
 
-1. **Conversion flottant → fixed-point globale et approximative** : choisir un format Q unique "confortable" (ex. Q16.16 partout) pour toute la chaîne, sans analyse fine.
-   - Simple à mettre en œuvre, mais risque de sur-dimensionner certains bus (surface gaspillée) ou de sous-dimensionner d'autres étages (perte de précision non maîtrisée, risque de divergence de l'algorithme).
+1. **Global and approximate floating-point → fixed-point conversion**: choose a single "comfortable" Q format (e.g. Q16.16 everywhere) for the entire pipeline, without detailed analysis.
+   - Simple to implement, but risks over-dimensioning some buses (wasted area) or under-dimensioning other stages (uncontrolled precision loss).
 
-2. **Quantification étape par étage, avec mesure d'erreur à chaque étage par rapport au calcul flottant de référence.**
-   - Demande plus de travail d'analyse en amont (établir le format Q le plus juste à chaque étage : distance, argument, exponentielle, somme de normalisation, gradient, mise à jour).
-   - Permet de dimensionner chaque bus au plus juste, en connaissance de l'erreur induite.
-   - Sous-produit direct : une fois toute la chaîne quantifiée, il devient possible de faire tourner un **modèle logiciel entièrement en fixed-point**, qui reproduit exactement les calculs qui seront faits en hardware.
+2. **Stage-by-stage quantization, with error measurement at each stage against the floating-point reference calculation.**
+   - Requires more upfront analysis work (determining the most appropriate Q format for each stage: distance, argument, exponential, normalization sum, gradient, update).
+   - Makes it possible to size each bus as tightly as possible, with full knowledge of the induced error.
+   - Direct by-product: once the entire pipeline has been quantized, it becomes possible to run a **fully fixed-point software model**, which exactly reproduces the calculations that will be performed in hardware.
 
-## Décision
-Quantification étage par étage (option 2), avec mesure systématique de l'écart au flottant à chaque étage. Le modèle logiciel fixed-point qui en résulte sert de modèle de référence bit-exact pour les testbenchs RTL : chaque signal intermédiaire produit par la simulation matérielle est comparé directement aux résultats intermédiaires produits par ce modèle, plutôt qu'à une resimulation flottante.
+## Decision
+Stage-by-stage quantization (option 2), with systematic measurement of the deviation from floating-point at each stage. The resulting fixed-point software model serves as the bit-exact reference model for RTL testbenches: each intermediate signal produced by the hardware simulation is directly compared against the intermediate results produced by this model, rather than against a floating-point resimulation.
 
-## Conséquences
+## Consequences
 
-**Positives**
-- Chaque bus de données est dimensionné au plus juste, ce qui limite le coût en surface/registres sans sacrifier la précision nécessaire.
-- Le modèle de référence bit-exact élimine toute ambiguïté lors du débogage de testbench : un écart entre RTL et modèle de référence est nécessairement un bug RTL, pas un artefact d'arrondi de comparaison flottant/fixed-point.
-- La démarche est documentée et reproductible pour d'éventuelles évolutions du format Q sur un étage donné.
+**Positive**
+- Each data bus is sized as tightly as possible, limiting the area/register cost without sacrificing the required precision.
+- The bit-exact reference model eliminates ambiguity when debugging the testbench: a discrepancy between the RTL and the reference model is necessarily an RTL bug, rather than a floating-point/fixed-point comparison rounding artifact.
+- The approach is documented and reproducible for potential future changes to the Q format of a given stage.
 
-**Négatives / limites**
-- Travail d'analyse initial plus long qu'une conversion globale approximative.
-- Le modèle de référence fixed-point doit être maintenu en cohérence avec le RTL à chaque évolution de l'architecture (tout changement de format Q côté hardware doit être répercuté côté modèle logiciel).
+**Negative / limitations**
+- More initial analysis work than an approximate global conversion.
+- The fixed-point reference model must be kept consistent with the RTL throughout architectural changes (any change to the Q format on the hardware side must be reflected on the software model side).
