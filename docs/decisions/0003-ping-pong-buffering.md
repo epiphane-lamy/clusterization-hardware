@@ -1,43 +1,43 @@
-# ADR-0003 — Double buffering (ping-pong) entre `exp` et `grad`, et duplication des mémoires de coordonnées
+# ADR-0003 — Double buffering (ping-pong) between `exp` and `grad`, and duplication of coordinate memories
 
-## Statut
-Retenu
+## Status
+Accepted
 
-## Contexte
-Suite à [ADR-0002](0002-single-row-streaming-vs-full-matrix.md), `P` est traité ligne par ligne via une mémoire tampon partagée entre `exp` (producteur) et `grad` (consommateur). Un enchaînement strictement séquentiel sur une seule mémoire de ligne (exp écrit → grad lit → exp écrit à nouveau) introduit un temps mort important : chaque bloc doit attendre que l'autre ait terminé avant de commencer son propre accès.
+## Context
+Following [ADR-0002](0002-single-row-streaming-vs-full-matrix.md), `P` is processed row by row through a shared buffer memory between `exp` (producer) and `grad` (consumer). A strictly sequential flow using a single row memory (exp writes → grad reads → exp writes again) introduces significant idle time: each block must wait for the other to finish before starting its own access.
 
-## Options considérées
+## Options considered
 
-1. **Une seule mémoire de ligne, accès strictement séquentiel entre `exp` et `grad`.**
-   - Architecture la plus simple, empreinte mémoire minimale (une seule ligne stockée).
-   - Aucun recouvrement possible entre la production d'une ligne et sa consommation : le temps de traitement total est la somme des deux, ligne après ligne.
+1. **A single row memory, with strictly sequential access between `exp` and `grad`.**
+   - Simplest architecture, with minimal memory footprint (only one row stored).
+   - No overlap possible between the production and consumption of a row: the total processing time is the sum of both phases, row after row.
 
-2. **Deux mémoires de ligne (A et B) avec un arbitre de ping-pong.**
-   - Pendant que `exp` écrit la ligne `i+1` dans la mémoire A, `grad` lit simultanément la ligne `i` (déjà produite) dans la mémoire B. Une fois les deux terminés, l'arbitre échange les rôles des deux mémoires (aiguillage, sans copie de données).
-   - Recouvre les deux phases : le temps de traitement se rapproche du plus lent des deux blocs plutôt que de leur somme.
-   - Coût : le double de mémoire de ligne par rapport à l'option 1 (deux lignes stockées au lieu d'une), et un bloc arbitre supplémentaire.
+2. **Two row memories (A and B) with a ping-pong arbiter.**
+   - While `exp` writes row `i+1` to memory A, `grad` simultaneously reads row `i` (already produced) from memory B. Once both are finished, the arbiter swaps the roles of the two memories (routing only, without copying data).
+   - Overlaps the two phases: processing time approaches the slower of the two blocks rather than their sum.
+   - Cost: twice the row memory compared to option 1 (two stored rows instead of one), plus an additional arbiter block.
 
-## Conséquence annexe et sous-décision : duplication des coordonnées
+## Secondary consequence and sub-decision: coordinate duplication
 
-Le recouvrement de l'option 2 impose que `exp` et `grad` puissent lire les coordonnées des points **simultanément**, chacun pour la ligne qu'il traite. Une mémoire de coordonnées unique à un seul port de lecture entrerait en conflit d'accès entre les deux blocs.
+The overlap provided by option 2 requires `exp` and `grad` to be able to read point coordinates **simultaneously**, each for the row it is processing. A single-port coordinate memory would create an access conflict between the two blocks.
 
-Deux options ont été considérées pour ce sous-problème :
-- **Mémoire de coordonnées unique, arbitrage d'accès entre `exp` et `grad`** : réintroduit un temps mort équivalent à celui que le ping-pong cherche justement à éliminer.
-- **Dupliquer la mémoire de coordonnées** (une copie dédiée à `exp`, une à `grad`) : chaque bloc a un accès dédié, sans arbitrage ni conflit.
+Two options were considered for this sub-problem:
+- **Single coordinate memory, with access arbitration between `exp` and `grad`**: reintroduces idle time equivalent to the very delay that the ping-pong scheme is intended to eliminate.
+- **Duplicate the coordinate memory** (one dedicated copy for `exp`, one for `grad`): each block has a dedicated access, with no arbitration or conflict.
 
-La duplication va, en apparence, à l'encontre de l'objectif de sobriété mémoire fixé par ADR-0002. Le coût réel reste néanmoins marginal : les coordonnées sont codées sur 16 bits en Q8.8, une mémoire de coordonnées dupliquée reste très largement plus petite que ne l'aurait été la matrice `P` complète évitée par ADR-0002.
+Duplication appears, at first glance, to go against the memory-efficiency objective established by ADR-0002. However, the actual cost remains marginal: the coordinates are encoded on 16 bits in Q8.8, and a duplicated coordinate memory remains vastly smaller than the complete `P` matrix that was avoided by ADR-0002.
 
-## Décision
-Option 2 (ping-pong à deux mémoires de ligne), combinée à la duplication de la mémoire de coordonnées entre `exp` et `grad`.
+## Decision
+Option 2 (two-memory ping-pong buffering), combined with duplication of the coordinate memory between `exp` and `grad`.
 
-## Conséquences
+## Consequences
 
-**Positives**
-- Recouvrement effectif entre production et consommation d'une ligne de `P` : le temps de calcul total est divisé par deux par rapport à un enchaînement strictement séquentiel.
-- Les deux blocs de calcul (`exp` et `grad`) travaillent en parallèle sur des lignes différentes en permanence.
-- Le coût mémoire de la duplication des coordonnées reste négligeable comparé au gain apporté par ADR-0002.
+**Positive**
+- Effective overlap between the production and consumption of a `P` row: total computation time is halved compared to a strictly sequential flow.
+- Both computation blocks (`exp` and `grad`) operate in parallel on different rows at all times.
+- The memory cost of coordinate duplication remains negligible compared to the gain provided by ADR-0002.
 
-**Négatives / limites**
-- Empreinte mémoire des lignes de `P` doublée par rapport à un schéma à une seule mémoire (reste cependant en `O(N)`, donc sans remise en cause de l'objectif global d'ADR-0002).
-- Complexité de contrôle supplémentaire : le bloc `ping pong arbitrer` doit garantir que l'échange entre mémoires A et B n'intervient qu'une fois les deux accès (écriture par `exp`, lecture par `grad`) effectivement terminés.
-- Va explicitement à l'encontre de l'objectif initial "memory light" formulé dans ADR-0002 — assumé comme compromis délibéré et chiffré, pas comme un oubli.
+**Negative / limitations**
+- Memory footprint for `P` rows is doubled compared to a single-memory scheme (it remains `O(N)`, so the overall objective of ADR-0002 is not compromised).
+- Additional control complexity: the `ping pong arbiter` block must ensure that the swap between memories A and B occurs only once both accesses (write by `exp`, read by `grad`) have actually completed.
+- Explicitly goes against the initial "memory light" objective stated in ADR-0002 — accepted as a deliberate and quantified trade-off, not an oversight.
