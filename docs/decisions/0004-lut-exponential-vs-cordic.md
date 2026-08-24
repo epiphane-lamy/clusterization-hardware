@@ -1,39 +1,39 @@
-# ADR-0004 — LUT pour l'exponentielle et l'inverse, plutôt que CORDIC
+# ADR-0004 — LUT for exponential and inverse, instead of CORDIC
 
-## Statut
-Retenu
+## Status
+Accepted
 
-## Contexte
-Le calcul du noyau gaussien de la matrice `P` nécessite une exponentielle (`exp(argument)`), et la normalisation de chaque ligne nécessite une division, implémentée comme une multiplication par l'inverse de la somme de ligne. Ces deux fonctions non linéaires n'ont pas d'implémentation matérielle triviale.
+## Context
+The Gaussian kernel calculation of matrix `P` requires an exponential (`exp(argument)`), and the normalization of each row requires a division, implemented as a multiplication by the inverse of the row sum. These two nonlinear functions do not have a trivial hardware implementation.
 
-## Options considérées
+## Options considered
 
-1. **CORDIC** (ou algorithme itératif équivalent) pour le calcul de l'exponentielle et de l'inverse.
-   - Solution générique, couvre n'importe quelle plage d'entrée sans hypothèse préalable sur la distribution des arguments.
-   - Coût en architecture significatif : pipeline itératif à plusieurs étages, lourd à intégrer pour un gain de généralité qui n'est pas nécessaire ici (voir ci-dessous).
+1. **CORDIC** (or an equivalent iterative algorithm) for calculating the exponential and inverse.
+   - Generic solution, covering any input range without prior assumptions about the distribution of the arguments.
+   - Significant architectural cost: multi-stage iterative pipeline, heavy to integrate for a gain in generality that is not necessary here (see below).
 
-2. **LUT (table de correspondance), dimensionnée après étude de la plage réelle des arguments observés sur le modèle logiciel de référence.**
-   - Nécessite une analyse préalable de la distribution des arguments pris par `exp()` sur des cas réels, pour vérifier qu'une LUT de taille raisonnable peut couvrir la plage utile sans perte excessive.
-   - Coût matériel très inférieur à CORDIC (une mémoire adressée directement, pas de pipeline itératif).
+2. **LUT (lookup table), sized after studying the actual range of arguments observed in the reference software model.**
+   - Requires prior analysis of the distribution of the arguments passed to `exp()`` on real-world cases, to verify that a reasonably sized LUT can cover the useful range without excessive loss.
+   - Much lower hardware cost than CORDIC (a directly addressed memory, with no iterative pipeline).
 
-## Analyse ayant motivé la décision
-Une étude de la plage de valeurs prise par l'argument de `exp()` sur le modèle logiciel de référence a montré que cet argument, toujours négatif, reste **borné et sature rapidement vers 0** en dessous d'un certain seuil (au-delà duquel la contribution au noyau gaussien est de toute façon négligeable). Cette plage étroite rend une LUT directement adressée par l'argument quantifié à la fois précise et de taille raisonnable.
+## Analysis motivating the decision
+A study of the range of values taken by the `exp()` argument in the reference software model showed that this argument, always negative, remains **bounded and quickly saturates toward 0** below a certain threshold (beyond which the contribution to the Gaussian kernel is negligible anyway). This narrow range makes a LUT directly addressed by the quantized argument both accurate and reasonably sized.
 
-Pour l'inverse (utilisé dans la normalisation), la plage dynamique de la somme de ligne à inverser est en revanche large. Un adressage direct par la valeur aurait demandé une LUT surdimensionnée. La solution retenue adresse la LUT inverse par la **mantisse** de la somme (après extraction du bit de poids fort et décalage), ce qui permet de couvrir toute la plage dynamique utile avec une LUT de taille fixe et raisonnable (1024 entrées).
+For the inverse (used in normalization), the dynamic range of the row sum to be inverted is much wider. Direct addressing by the value would have required an oversized LUT. The chosen solution addresses the inverse LUT using the **mantissa** of the sum (after extracting the most significant bit and shifting), making it possible to cover the entire useful dynamic range with a fixed and reasonably sized LUT (1024 entries).
 
-## Décision
-Implémentation de `exp()` et de l'inverse par LUT :
-- LUT `exp`, adressée directement par l'argument quantifié (Q6.10), 10241 entrées en Q0.16.
-- LUT inverse, adressée par la mantisse de la somme de ligne, 1024 entrées en Q0.16.
+## Decision
+Implementation of `exp()` and the inverse using LUTs:
+- `exp` LUT, directly addressed by the quantized argument (Q6.10), 10241 entries in Q0.16.
+- Inverse LUT, addressed by the mantissa of the row sum, 1024 entries in Q0.16.
 
-## Conséquences
+## Consequences
 
-**Positives**
-- Coût matériel très inférieur à une implémentation CORDIC : simple mémoire adressée, pas de pipeline itératif multi-étages.
-- Latence de calcul fixe et connue (accès mémoire simple), plutôt que le nombre d'itérations variable ou fixe mais élevé d'un CORDIC.
-- L'adressage par mantisse pour l'inverse permet de couvrir une large plage dynamique sans faire croître la taille de la LUT.
+**Positive**
+- Much lower hardware cost than a CORDIC implementation: simple addressed memory, with no multi-stage iterative pipeline.
+- Fixed and known calculation latency (simple memory access), rather than the variable or fixed-but-high number of iterations of a CORDIC.
+- Mantissa-based addressing for the inverse makes it possible to cover a wide dynamic range without increasing the LUT size.
 
-**Négatives / limites**
-- Solution spécifique à la distribution des arguments observée sur ce jeu de données et cet algorithme — contrairement à CORDIC, elle n'est pas généralisable telle quelle à un autre contexte de calcul sans revalider l'étude de plage.
-- Précision limitée par la résolution de la LUT (quantification supplémentaire par rapport à un calcul direct), dont l'impact a été mesuré dans la chaîne de quantification globale (voir [ADR-0001](0001-fixed-point-quantization-chain.md)).
-- Coût mémoire fixe des deux LUT (au total environ 20 ko), à mettre en balance avec la surface qu'aurait occupée un CORDIC — jugé favorable ici étant donné le gain de simplicité de contrôle.
+**Negative / limitations**
+- Solution specific to the distribution of arguments observed for this dataset and algorithm — unlike CORDIC, it cannot be generalized as-is to another computational context without revalidating the range analysis.
+- Precision is limited by the LUT resolution (additional quantization compared to a direct calculation), whose impact was measured in the overall quantization chain (see [ADR-0001](0001-fixed-point-quantization-chain.md)).
+- Fixed memory cost of the two LUTs (approximately 20 KB in total), to be weighed against the area that a CORDIC would have occupied — considered favorable here given the gain in control simplicity.
