@@ -1,35 +1,35 @@
-# ADR-0006 — Bit de validité plutôt que valeur sentinelle pour les clusters non assignés
+# ADR-0006 — Validity bit instead of sentinel value for unassigned clusters
 
-## Statut
-Retenu
+## Status
+Accepted
 
-## Contexte
-Dans le modèle logiciel de référence, chaque point se voit attribuer un numéro de cluster initialisé à `-1`, utilisé comme valeur sentinelle pour signifier "pas encore assigné à un cluster". Ce mécanisme repose sur le fait qu'un tableau logiciel peut être initialisé à une valeur arbitraire au démarrage, et que `-1` est trivialement distinguable de tout numéro de cluster valide (toujours positif ou nul).
+## Context
+In the reference software model, each point is assigned a cluster number initialized to `-1`, used as a sentinel value to indicate "not yet assigned to a cluster". This mechanism relies on the fact that a software array can be initialized to an arbitrary value at startup, and that `-1` is trivially distinguishable from any valid cluster number (always positive or zero).
 
-Cette hypothèse ne tient pas directement en hardware : une mémoire ne possède pas d'état "non initialisé" observable et fiable au moment de la lecture — son contenu au reset dépend de la technologie cible et ne peut pas être supposé nul ou constant de façon portable. Reproduire `-1` comme sentinelle nécessiterait soit une initialisation explicite de toute la mémoire au reset (coût en cycles, ou en logique dédiée selon la cible), soit de réserver une valeur du champ numéro-de-cluster comme sentinelle.
+This assumption does not directly hold in hardware: a memory has no observable and reliable "uninitialized" state when read — its contents after reset depend on the target technology and cannot be assumed to be zero or constant in a portable way. Reproducing `-1` as a sentinel would require either explicitly initializing the entire memory to this value at reset (at the cost of cycles or dedicated logic depending on the target), or reserving a value of the cluster-number field as a sentinel.
 
-## Options considérées
+## Options considered
 
-1. **Réserver une valeur du champ numéro-de-cluster comme sentinelle** (ex. la valeur maximale représentable), équivalent direct du `-1` logiciel.
-   - Ne nécessite pas de bit supplémentaire.
-   - Réduit le nombre de clusters effectivement représentables de un (une valeur du champ est "consommée" par la sentinelle).
-   - Nécessite tout de même une initialisation explicite de la mémoire à cette valeur sentinelle au reset, pour que l'état "non assigné" soit garanti au démarrage.
+1. **Reserve a value of the cluster-number field as a sentinel** (e.g. the maximum representable value), as the direct equivalent of the software `-1`.
+   - Does not require an additional bit.
+   - Reduces the number of effectively representable clusters by one (one field value is "consumed" by the sentinel).
+   - Still requires explicit initialization of the memory to this sentinel value at reset, so that the "unassigned" state is guaranteed at startup.
 
-2. **Bit de validité dédié, un par ligne de la mémoire cluster, séparé du champ numéro-de-cluster.**
-   - Le contenu du champ numéro-de-cluster lui-même n'a besoin d'aucune initialisation particulière : sa valeur n'est significative que lorsque le bit de validité associé est à 1.
-   - Le bit de validité est initialisé à 0 au reset (coût minime : un bit par point, largement plus simple à garantir qu'une initialisation complète du champ numéro-de-cluster).
-   - Le champ numéro-de-cluster garde l'intégralité de sa plage de représentation disponible pour de vrais numéros de cluster.
+2. **Dedicated validity bit, one per row of the cluster memory, separate from the cluster-number field.**
+   - The cluster-number field itself requires no particular initialization: its value is only meaningful when the associated validity bit is 1.
+   - The validity bit is initialized to 0 at reset (minimal cost: one bit per point, significantly simpler to guarantee than a complete initialization of the cluster-number field).
+   - The cluster-number field retains its entire representable range for actual cluster numbers.
 
-## Décision
-Option 2 : un bit de validité dédié par ligne de la mémoire cluster (`valid_cluster`, visible sur le schéma toplevel de la partie 2), initialisé à 0 au reset. Un point est considéré comme non assigné tant que son bit de validité vaut 0, indépendamment du contenu du champ numéro-de-cluster à cette adresse.
+## Decision
+Option 2: a dedicated validity bit per row of the cluster memory (`valid_cluster`, visible on the part 2 toplevel diagram), initialized to 0 at reset. A point is considered unassigned as long as its validity bit is 0, regardless of the contents of the cluster-number field at that address.
 
-## Conséquences
+## Consequences
 
-**Positives**
-- Aucune contrainte d'initialisation sur le champ numéro-de-cluster lui-même — seul le bit de validité doit être garanti à 0 au reset, ce qui est trivial à assurer quelle que soit la cible (FPGA ou ASIC).
-- Toute la plage du champ numéro-de-cluster reste disponible pour représenter de vrais clusters, sans valeur sacrifiée comme sentinelle.
-- Sémantique explicite et sans ambiguïté à la lecture du RTL : la validité d'une donnée est portée par un signal dédié plutôt que déduite d'une convention sur le contenu.
+**Positive**
+- No initialization constraint on the cluster-number field itself — only the validity bit must be guaranteed to be 0 at reset, which is trivial to ensure regardless of the target (FPGA or ASIC).
+- The entire range of the cluster-number field remains available to represent actual clusters, with no value sacrificed as a sentinel.
+- Explicit and unambiguous semantics when reading the RTL: data validity is carried by a dedicated signal rather than inferred from a convention on the contents.
 
-**Négatives / limites**
-- Un bit supplémentaire par point dans la mémoire cluster (coût mémoire marginal comparé au champ numéro-de-cluster lui-même).
-- Introduit une divergence de représentation avec le modèle logiciel de référence (`-1` vs `valid = 0`), à garder en tête lors de la comparaison des résultats du testbench avec le modèle de référence bit-exact (voir ARCHITECTURE.md, §9) : la comparaison doit interpréter `valid = 0` comme équivalent à `-1`, pas comparer les deux champs bruts terme à terme.
+**Negative / limitations**
+- One additional bit per point in the cluster memory (marginal memory cost compared to the cluster-number field itself).
+- Introduces a representation divergence from the reference software model (`-1` vs `valid = 0`), which must be kept in mind when comparing testbench results with the bit-exact reference model (see [`ARCHITECTURE.md`](../ARCHITECTURE.md), §9): the comparison must interpret `valid = 0` as equivalent to `-1`, rather than comparing the two raw fields term by term.
