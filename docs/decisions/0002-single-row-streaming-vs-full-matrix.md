@@ -1,31 +1,31 @@
-# ADR-0002 — Streaming ligne par ligne de la matrice P plutôt que stockage complet
+# ADR-0002 — Row-by-row streaming of matrix P instead of full storage
 
-## Statut
-Retenu
+## Status
+Accepted
 
-## Contexte
-Le modèle logiciel de référence construit et stocke intégralement une matrice `P` de taille `N × N` à chaque itération de l'algorithme, où `N` est le nombre de points. Pour un jeu de test raisonnable de 1000 points, cela représente 1 000 000 de coefficients — même codés sur 16 bits (Q0.16), cela correspond à 2 Mo à reconstruire à chaque itération. Sur une cible FPGA de taille modeste, ou en vue d'un flot ASIC où chaque bit de mémoire a un coût direct en surface, cette approche est inenvisageable telle quelle.
+## Context
+The reference software model fully builds and stores an `N × N` matrix `P` at each iteration of the algorithm, where `N` is the number of points. For a reasonable test set of 1000 points, this represents 1,000,000 coefficients — even when encoded on 16 bits (Q0.16), this corresponds to 2 MB to be reconstructed at each iteration. On a modest-sized FPGA target, or in an ASIC flow where every memory bit has a direct area cost, this approach is not viable as-is.
 
-## Options considérées
+## Options considered
 
-1. **Stocker la matrice `P` complète en mémoire (reproduction directe de l'algorithme logiciel).**
-   - Fidèle à l'algorithme d'origine, aucune restructuration de l'ordre des calculs nécessaire.
-   - Empreinte mémoire en `O(N²)`, rédhibitoire dès que `N` dépasse quelques dizaines de points.
+1. **Store the complete matrix `P` in memory (direct reproduction of the software algorithm).**
+   - Faithful to the original algorithm, with no restructuring of the calculation order required.
+   - `O(N²)` memory footprint, prohibitive as soon as `N` exceeds a few dozen points.
 
-2. **Produire et consommer la matrice `P` ligne par ligne, sans jamais la matérialiser en entier.**
-   - Le bloc `exp` produit une ligne de `P` (les `N` coefficients relatifs à un point `i`), le bloc `grad` la consomme immédiatement pour calculer la contribution au gradient du point `i`, puis la ligne suivante peut être produite.
-   - Empreinte mémoire en `O(N)` (une seule ligne à la fois), au prix d'une restructuration du flux de calcul par rapport au modèle logiciel d'origine.
+2. **Produce and consume matrix `P` row by row, without ever materializing it in its entirety.**
+   - The `exp` block produces one row of `P` (the `N` coefficients corresponding to a point `i`), the `grad` block consumes it immediately to calculate the gradient contribution for point `i`, and then the next row can be produced.
+   - `O(N)` memory footprint (only one row at a time), at the cost of restructuring the calculation flow compared to the original software model.
 
-## Décision
-Option 2 : le bloc `exp` produit `P` ligne par ligne, consommée au fil de l'eau par le bloc `grad`. Aucune mémoire ne stocke la matrice `P` complète à aucun moment de l'exécution.
+## Decision
+Option 2: the `exp` block produces `P` row by row, consumed on the fly by the `grad` block. No memory ever stores the complete matrix `P` at any point during execution.
 
-## Conséquences
+## Consequences
 
-**Positives**
-- Empreinte mémoire réduite de `O(N²)` à `O(N)` — pour 1000 points, passage de 2 Mo à quelques ko.
-- Rend l'architecture viable aussi bien en FPGA qu'en vue d'un flot ASIC où la surface mémoire est directement coûteuse.
-- Ce choix structure toute l'architecture mémoire du projet (voir [ADR-0003](0003-ping-pong-buffering.md) pour la suite directe de cette décision).
+**Positive**
+- Memory footprint reduced from `O(N²)` to `O(N)` — for 1000 points, going from 2 MB to a few KB.
+- Makes the architecture viable both for FPGA and for an ASIC flow where memory area is directly costly.
+- This choice structures the entire memory architecture of the project (see [ADR-0003](0003-ping-pong-buffering.md) for the direct follow-up to this decision).
 
-**Négatives / limites**
-- Le simple enchaînement séquentiel (exp écrit → grad lit → exp écrit à nouveau) introduit un temps mort entre les deux blocs, qui a nécessité une solution complémentaire de recouvrement (voir [ADR-0003](0003-ping-pong-buffering.md)).
-- Le calcul de la somme de normalisation d'une ligne, qui nécessitait auparavant une deuxième passe sur la matrice complète dans le modèle logiciel, doit être recalculé différemment pour rester compatible avec un flux ligne par ligne (accumulation à la volée par le bloc `exp`, voir [ARCHITECTURE.md](../ARCHITECTURE.md) §6).
+**Negative / limitations**
+- The simple sequential flow (exp writes → grad reads → exp writes again) introduces idle time between the two blocks, which required a complementary overlap solution (see [ADR-0003](0003-ping-pong-buffering.md)).
+- The calculation of the normalization sum for a row, which previously required a second pass over the complete matrix in the software model, must be recalculated differently to remain compatible with a row-by-row streaming flow (on-the-fly accumulation by the `exp` block, see [ARCHITECTURE.md](../ARCHITECTURE.md) §6).
