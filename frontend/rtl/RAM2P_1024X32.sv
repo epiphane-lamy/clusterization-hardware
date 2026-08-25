@@ -1,3 +1,4 @@
+// mémoire macro
 module RAM2P_1024X32 #(
     parameter int ADDR_W = 10,   // largeur de l'adresse
     parameter int DATA_W = 32

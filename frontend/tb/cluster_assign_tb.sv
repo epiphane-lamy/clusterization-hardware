@@ -1,25 +1,23 @@
 
 
 module cluster_assign_tb #(
-    parameter int NB_POINTS    = 100,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int NB_ITER      = 50,          // nombre d'itérations
-    parameter int COORD_W      = 16,          // largeur des coordonnees
-    parameter int ADDR_W       = 7,           // largeur des adresses points Xf
-    parameter int TOL          = 422144877    // cst TOL
+    parameter int NB_POINTS    = 100,      // Number of points, Currently a fixed default
+    parameter int COORD_W      = 16,       // Coordinate width, fixed-point
+    parameter int ADDR_W       = 7,        // Point BRAM address width
+    parameter int TOL          = 422144877 // cst TOL
 	);
 
     // -------------------------------------------------------------------
-    // Déclaration bloc de recherche de clusters + mémoire cluster
+    // Declaration of the cluster search module and cluster memory
     // -------------------------------------------------------------------
 
     logic       clk;
     logic       rst_n;
 
-    logic start_b4;     // lance le bloc cluster_assign
+    logic start_b4; // Launches the cluster_assign module
 
 
-    // --- Port BRAM point (adresse incrementee chaque cycle) ---
-    
+    // --- Point coordinate BRAM port ---
     logic [ADDR_W-1:0] addr;
 
     logic              control_mem;
@@ -29,7 +27,7 @@ module cluster_assign_tb #(
     logic [COORD_W-1:0] coord_X;
     logic [COORD_W-1:0] coord_Y;
 
-    // --- Port BRAM clusters ---
+    // --- Clusters BRAM Port ---
     logic              control_mem_cluster;
     logic [ADDR_W-1:0] addr_cluster;
     logic [ADDR_W-1:0] addr_cluster_tb;
@@ -41,7 +39,7 @@ module cluster_assign_tb #(
 
     logic done_cluster;
 
-    // DUT cluster_assign
+    // DUT instantiation
     cluster_assign #(
         .NB_POINTS (NB_POINTS),
         .COORD_W   (COORD_W),
@@ -66,7 +64,7 @@ module cluster_assign_tb #(
     );
 
 
-    // memory cluster
+    // Clusters memory
     memory_cluster #(
         .ADDR_W (ADDR_W)
     ) mem_cluster (
@@ -87,7 +85,7 @@ module cluster_assign_tb #(
     logic [COORD_W-1:0] data_in1;
     logic [COORD_W-1:0] data_in2;
 
-    // DUT memory
+    // Coordinate memory
     memory_dual_port #(
         .ADDR_W (ADDR_W),
         .DATA_W (COORD_W)
@@ -105,14 +103,17 @@ module cluster_assign_tb #(
     );
 
 
+    // -------------------------------------------------------------------------
+    // Testbench tasks
+    // -------------------------------------------------------------------------
 
-
+    // Display state task
     task display_state(input string label);
     $display("[%0t] %-22s | coord_X=%08b coord_Y=%08b addr=%08b",
         $time, label, coord_X, coord_Y, addr);
     endtask
 
-    // write memory task
+    // Task to write coordinate data to memory
     task write_memory(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
         control_mem = 0;
         we          = 1;
@@ -126,24 +127,24 @@ module cluster_assign_tb #(
         control_mem = 1;
     endtask
 
-
+    // Task to write update values to memory
     task read_memory_cluster(input logic [ADDR_W-1:0] addr_task);
         control_mem_cluster = 0;
         addr_cluster_tb = addr_task;
         @(posedge clk);
-        $display("lecture mémoire cluster cluster[%0d] = %0d",
+        $display("READ memory cluster[%0d] = %0d",
         addr_cluster, cluster_in);
         control_mem_cluster = 1;
     endtask
 
-
+    // Task to read coordinate data from memory
     task automatic monitor_results();
         int result_count = 0;
 
         forever begin
             @(posedge clk);
             if (done_cluster) begin
-                $display("[%0t] Calcul terminé", $time);
+                $display("[%0t] Simulation finished", $time);
                 break;
             end
         end
@@ -151,11 +152,17 @@ module cluster_assign_tb #(
 
     always #5 clk = ~clk;
 
-
+    // -------------------------------------------------------------------------
+    // Memory control multiplexing
+    // -------------------------------------------------------------------------
     always_comb begin
         addr = (control_mem == 1) ? addr_compute : addr_tb;
         addr_cluster = (control_mem_cluster == 1) ? addr_cluster_compute : addr_cluster_tb;
     end
+
+    // -------------------------------------------------------------------------
+    // Testbench stimulus
+    // -------------------------------------------------------------------------
 
     integer fd;
     int ret;
@@ -164,9 +171,11 @@ module cluster_assign_tb #(
     initial begin
 
 
-        $display("\n=== début de la simulation ===");
+        $display("\n=== Simulation start ===");
 
-        // init
+        // ---------------------------------------------------------------------
+        // Initialization
+        // ---------------------------------------------------------------------
         clk         =  0;
         rst_n       =  0;
         we          =  0;
@@ -180,15 +189,20 @@ module cluster_assign_tb #(
             monitor_results();
         join_none
 
+        // ---------------------------------------------------------------------
+        // Reset
+        // ---------------------------------------------------------------------
         @(posedge clk);
         rst_n = 1;
         @(posedge clk);
         
-        // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
+        // ---------------------------------------------------------------------
+        // Load point coordinates into memory
+        // ---------------------------------------------------------------------
         fd = $fopen("data/cluster_fixed.txt", "r");
 
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
+            $fatal(1, "Error while opening cluster_fixed.txt");
         end
 
         addr_file = 0;
@@ -208,15 +222,18 @@ module cluster_assign_tb #(
 
         $fclose(fd);
 
-        $display("%0d points chargés depuis cluster_fixed.txt", addr_file);
+        $display("%0d points loaded from cluster_fixed.txt", addr_file);
 
 
-        // lancement calcul
+        // ---------------------------------------------------------------------
+        // Start computation
+        // ---------------------------------------------------------------------
         control_mem = 1;
         start_b4 = 1;
         @(posedge clk);
         start_b4 = 0;
 
+        // Wait for computation to complete
         wait(done_cluster);
         @(posedge clk);
 
@@ -225,7 +242,7 @@ module cluster_assign_tb #(
         end
 
         #10;
-        $display("\n=== Fin de la simulation ===");
+        $display("\n=== Simulation completed ===");
         $finish;
     end
 

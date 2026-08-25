@@ -1,4 +1,5 @@
 
+// mémoire avec macro pour simu rtl
 
 module memory_single_port #(
     parameter int ADDR_W = 10,   // largeur de l'adresse

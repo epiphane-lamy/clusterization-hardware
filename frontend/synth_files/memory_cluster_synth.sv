@@ -1,4 +1,5 @@
 
+// mémoire avec macro pour simu rtl
 module memory_cluster #(
     parameter int ADDR_W = 12           // largeur des adresses clusters
 	)(

@@ -1,16 +1,11 @@
 rtl/clusterization_pkg.sv
 rtl/clusterization.sv
 
-rtl/RAM2P_1024X32.sv
-synth_files/memory_single_port_synth.sv
-//rtl/memory_single_port.sv
+rtl/memory_single_port.sv
 
-rtl/RAM_4096X32.sv
-synth_files/memory_dual_port_synth.sv
-//rtl/memory_dual_port.sv
+rtl/memory_dual_port.sv
 
-synth_files/memory_cluster_synth.sv
-//rtl/memory_cluster.sv
+rtl/memory_cluster.sv
 
 rtl/cluster_assign.sv
 rtl/act_coord.sv
