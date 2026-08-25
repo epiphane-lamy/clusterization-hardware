@@ -1,8 +1,8 @@
 
-
+// mémoire custom pour simu rtl
 module memory_dual_port #(
-    parameter int ADDR_W = 7,   // largeur de l'adresse
-    parameter int DATA_W = 8
+    parameter int ADDR_W = 12,   // largeur de l'adresse
+    parameter int DATA_W = 16
 	)(
     // General
     input  logic       clk,

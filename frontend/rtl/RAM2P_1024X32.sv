@@ -16,4 +16,25 @@ module RAM2P_1024X32 #(
     output logic [DATA_W-1:0] QB    // Data out Port B
 );
 
+    logic [DATA_W-1:0] memory [0:2**ADDR_W-1];
+
+    always_ff @(posedge CLKA) begin
+        if (!CENA) begin
+            QA <= memory[AA];
+            if (!WENA) begin
+                memory[AA] <= DA;
+            end
+        end
+    end
+
+    always_ff @(posedge CLKB) begin
+        if (!CENB) begin
+            QB <= memory[AB];
+            if (!WENB) begin
+                memory[AB] <= DB;
+            end
+        end
+    end
+
+
 endmodule

@@ -226,7 +226,8 @@ module clusterization #(
 
         .P_IJ_W       (P_IJ_W),
         .ADDR_P_IJ_W  (ADDR_P_IJ_W),
-        .ADDR_LUT_INV (ADDR_LUT_INV)
+        .ADDR_LUT_INV (ADDR_LUT_INV),
+        .ACT_W        (ACT_W)
     ) bloc_grad (
         .clk(clk),
         .rst_n(rst_n),
@@ -340,7 +341,7 @@ module clusterization #(
         .ADDR_W (ADDR_W),
         .P_IJ_W (P_IJ_W),
         .ADDR_P_IJ_W (ADDR_P_IJ_W)
-    ) memory_P_ij_arbitrer (
+    ) memory_P_ij_arbiter (
         .clk(clk),
         .rst_n(rst_n),
 

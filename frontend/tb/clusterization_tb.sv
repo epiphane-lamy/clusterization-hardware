@@ -4,7 +4,7 @@ module clusterization_tb #(
     parameter int NB_POINTS    = 1250, // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
     parameter int NB_ITER      = 50,                            // nombre d'itérations
     parameter int COORD_W      = 16,                            // largeur des coordonnees
-    parameter int ADDR_W       = $clog2(NB_POINTS),             // largeur des adresses points Xf
+    parameter int ADDR_W       = 12,             // largeur des adresses points Xf
     parameter int P_IJ_W       = 16,                            // largeur des P_ij, fixed-point SIGNE
     parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS),             // largeur des adresses P_ij
     parameter int ADDR_LUT_INV = 10,                            // largeur des adresses LUT exp
