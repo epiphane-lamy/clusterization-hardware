@@ -41,9 +41,7 @@ set slew_min_rise 0.146 ;# ns
 set slew_min_fall 0.164 ;# ns
 set slew_max_rise 0.264 ;# ns
 set slew_max_fall 0.252 ;# ns
-#
-set WORST_LIST {slow_vdd1v0_basicCells.lib}
-set BEST_LIST {fast_vdd1v2_basicCells.lib} 
+
 
 set WORST_LIST {
     /home/epiphane/projets/LIBS/lib/slow_vdd1v0.lib
@@ -83,23 +81,12 @@ source ${SCRIPT_DIR}/common/tech.tcl
 # Set the active library dynamically based on the Makefile parameter
 set lib_type $env(LIB_TYPE)
 set_db [get_db library_domain *$lib_type] .default true
-#set_db [get_db library_domain *best] .default true
-#set_db [get_db library_domain *worst] .default true
 
 #-----------------------------------------------------------------------------
 # Analyze RTL source (manually set; file_list.tcl is not covered in ELC1054)
 #-----------------------------------------------------------------------------
 
-#set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
-#set rtl_files ${DESIGNS}.vhd
-#read_hdl -language vhdl $rtl_files
-
 set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
-#set rtl_files "Util_package.vhd ${DESIGNS}.vhd"
-#read_hdl -language vhdl $rtl_files 
-#Da pra fazer um -f filelist
-# Read VHDL files
-#read_hdl -vhdl {fpupack.vhd serial_mul.vhd pre_norm_mul.vhd post_norm_mul.vhd mul_24.vhd}
 
 # Read SystemVerilog files
 read_hdl -sv {
@@ -116,19 +103,6 @@ read_hdl -sv {
     synth_files/memory_single_port_synth.sv
     synth_files/memory_cluster_synth.sv
 }
-
-
-
-
-
-#-----------------------------------------------------------------------------
-# Elaborate Design
-#-----------------------------------------------------------------------------
-#elaborate ${HDL_NAME}
-#set_top_module ${HDL_NAME}
-#check_design -unresolved ${HDL_NAME}
-#get_db current_design
-#check_library
 
 
 #-----------------------------------------------------------------------------
@@ -150,8 +124,6 @@ set_db [get_db lib_cells * -if {.site.name == "CoreSiteDouble"}] .avoid true
 # Constraints
 #-----------------------------------------------------------------------------
 read_sdc ${BACKEND_DIR}/synthesis/constraints/${HDL_NAME}.sdc
-#report timing -from a_i[0] -to sum_temp_reg[7]/D
-#gui_show
 
 #-----------------------------------------------------------------------------
 # Pos "Elaborate" Attributes (manually set)
@@ -216,24 +188,6 @@ if { [file exists $vcd_path] } {
     report_sdb_annotation > ${RUN_RPT_DIR}/${HDL_NAME}_sdb_annotation.rpt
     report_power -unit uW > ${RUN_RPT_DIR}/${HDL_NAME}_power.rpt
 
-    #-----------------------------------------------------------------------------
-    # Extracting Specific Signal Probabilities and Toggle Rates
-    #-----------------------------------------------------------------------------
-    # Fetch sum_o[7]
-    #set prob_sum [get_db hnet:sum_o[7] .lp_computed_probability]
-    #set tr_sum   [get_db hnet:sum_o[7] .lp_computed_toggle_rate]
-
-    # Fetch a_i[1]
-    #set prob_a   [get_db hnet:a_i[1] .lp_computed_probability]
-    #set tr_a     [get_db hnet:a_i[1] .lp_computed_toggle_rate]
-
-    # Write out using unique keys matching the Python regex
-    #set prob_file [open "${RUN_RPT_DIR}/${HDL_NAME}_probabilities.rpt" w]
-    #puts $prob_file "sum_o[7]_prob : $prob_sum"
-    #puts $prob_file "sum_o[7]_tr : $tr_sum"
-    #puts $prob_file "a_i[1]_prob : $prob_a"
-    #puts $prob_file "a_i[1]_tr : $tr_a"
-    #close $prob_file
 
 } else {
     puts "==============================================================="

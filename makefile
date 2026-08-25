@@ -88,41 +88,51 @@ export INVERTERS_CTS = INVX20 CLKINVX20 INVX16 INVX12 INVX8 INVX6 INVX4 INVX3 IN
 # Pads of chip
 # ---------------- LEFT ----------------
 export LEFT_CORE_PINS = \
-    clk \
-    rst_n \
-    start
-
-
-# ---------------- RIGHT ----------------
-export RIGHT_CORE_PINS = \
-    done \
-    control_mem_cluster_read \
-    addr_cluster_read[0] \
-    addr_cluster_read[1] \
-    addr_cluster_read[2] \
-    addr_cluster_read[3] \
-    addr_cluster_read[4] \
-    addr_cluster_read[5] \
-    addr_cluster_read[6] \
-    addr_cluster_read[7] \
-    addr_cluster_read[8] \
-    addr_cluster_read[9] \
-    addr_cluster_read[10] \
-    cluster_read[0] \
-    cluster_read[1] \
-    cluster_read[2] \
-    cluster_read[3] \
-    cluster_read[4] \
-    cluster_read[5] \
-    cluster_read[6] \
-    cluster_read[7] \
-    cluster_read[8] \
-    cluster_read[9] \
-    cluster_read[10]
-
-
-# ---------------- TOP ----------------
-export TOP_CORE_PINS = \
+    control_mem_coord_load_b2 \
+    we_coord_load_b2 \
+    addr_coord_load_b2[0] \
+    addr_coord_load_b2[1] \
+    addr_coord_load_b2[2] \
+    addr_coord_load_b2[3] \
+    addr_coord_load_b2[4] \
+    addr_coord_load_b2[5] \
+    addr_coord_load_b2[6] \
+    addr_coord_load_b2[7] \
+    addr_coord_load_b2[8] \
+    addr_coord_load_b2[9] \
+    addr_coord_load_b2[10] \
+    data_in1_coord_load_b2[0] \
+    data_in1_coord_load_b2[1] \
+    data_in1_coord_load_b2[2] \
+    data_in1_coord_load_b2[3] \
+    data_in1_coord_load_b2[4] \
+    data_in1_coord_load_b2[5] \
+    data_in1_coord_load_b2[6] \
+    data_in1_coord_load_b2[7] \
+    data_in1_coord_load_b2[8] \
+    data_in1_coord_load_b2[9] \
+    data_in1_coord_load_b2[10] \
+    data_in1_coord_load_b2[11] \
+    data_in1_coord_load_b2[12] \
+    data_in1_coord_load_b2[13] \
+    data_in1_coord_load_b2[14] \
+    data_in1_coord_load_b2[15] \
+    data_in2_coord_load_b2[0] \
+    data_in2_coord_load_b2[1] \
+    data_in2_coord_load_b2[2] \
+    data_in2_coord_load_b2[3] \
+    data_in2_coord_load_b2[4] \
+    data_in2_coord_load_b2[5] \
+    data_in2_coord_load_b2[6] \
+    data_in2_coord_load_b2[7] \
+    data_in2_coord_load_b2[8] \
+    data_in2_coord_load_b2[9] \
+    data_in2_coord_load_b2[10] \
+    data_in2_coord_load_b2[11] \
+    data_in2_coord_load_b2[12] \
+    data_in2_coord_load_b2[13] \
+    data_in2_coord_load_b2[14] \
+    data_in2_coord_load_b2[15] \
     control_mem_coord_load_b1 \
     we_coord_load_b1 \
     addr_coord_load_b1[0] \
@@ -170,53 +180,43 @@ export TOP_CORE_PINS = \
     data_in2_coord_load_b1[15]
 
 
+# ---------------- RIGHT ----------------
+export RIGHT_CORE_PINS = \
+    control_mem_cluster_read \
+    addr_cluster_read[0] \
+    addr_cluster_read[1] \
+    addr_cluster_read[2] \
+    addr_cluster_read[3] \
+    addr_cluster_read[4] \
+    addr_cluster_read[5] \
+    addr_cluster_read[6] \
+    addr_cluster_read[7] \
+    addr_cluster_read[8] \
+    addr_cluster_read[9] \
+    addr_cluster_read[10] \
+    cluster_read[0] \
+    cluster_read[1] \
+    cluster_read[2] \
+    cluster_read[3] \
+    cluster_read[4] \
+    cluster_read[5] \
+    cluster_read[6] \
+    cluster_read[7] \
+    cluster_read[8] \
+    cluster_read[9] \
+    cluster_read[10]
+
+
+# ---------------- TOP ----------------
+export TOP_CORE_PINS =
+
+
 # ---------------- BOTTOM ----------------
 export BOTTOM_CORE_PINS = \
-    control_mem_coord_load_b2 \
-    we_coord_load_b2 \
-    addr_coord_load_b2[0] \
-    addr_coord_load_b2[1] \
-    addr_coord_load_b2[2] \
-    addr_coord_load_b2[3] \
-    addr_coord_load_b2[4] \
-    addr_coord_load_b2[5] \
-    addr_coord_load_b2[6] \
-    addr_coord_load_b2[7] \
-    addr_coord_load_b2[8] \
-    addr_coord_load_b2[9] \
-    addr_coord_load_b2[10] \
-    data_in1_coord_load_b2[0] \
-    data_in1_coord_load_b2[1] \
-    data_in1_coord_load_b2[2] \
-    data_in1_coord_load_b2[3] \
-    data_in1_coord_load_b2[4] \
-    data_in1_coord_load_b2[5] \
-    data_in1_coord_load_b2[6] \
-    data_in1_coord_load_b2[7] \
-    data_in1_coord_load_b2[8] \
-    data_in1_coord_load_b2[9] \
-    data_in1_coord_load_b2[10] \
-    data_in1_coord_load_b2[11] \
-    data_in1_coord_load_b2[12] \
-    data_in1_coord_load_b2[13] \
-    data_in1_coord_load_b2[14] \
-    data_in1_coord_load_b2[15] \
-    data_in2_coord_load_b2[0] \
-    data_in2_coord_load_b2[1] \
-    data_in2_coord_load_b2[2] \
-    data_in2_coord_load_b2[3] \
-    data_in2_coord_load_b2[4] \
-    data_in2_coord_load_b2[5] \
-    data_in2_coord_load_b2[6] \
-    data_in2_coord_load_b2[7] \
-    data_in2_coord_load_b2[8] \
-    data_in2_coord_load_b2[9] \
-    data_in2_coord_load_b2[10] \
-    data_in2_coord_load_b2[11] \
-    data_in2_coord_load_b2[12] \
-    data_in2_coord_load_b2[13] \
-    data_in2_coord_load_b2[14] \
-    data_in2_coord_load_b2[15]
+    start \
+    done \
+    clk \
+    rst_n
 
 #-----------------------------------------------------------------------------
 # Directories & Modules
@@ -275,9 +275,11 @@ endif
 
 # Xcelium (Frontend generic RTL simulation with filelist)
 RTL_FILELIST = $(PROJECT_DIR)/$(FRONTEND_DIR)/filelist.f
+RTL_FILELIST_BB = $(PROJECT_DIR)/$(FRONTEND_DIR)/filelist_bb.f
 
 # Example of the corrected parameter syntax:
-XRUN_FLAGS = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
+XRUN_FLAGS    = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
+XRUN_FLAGS_BB = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST_BB) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
 # Genus (Synthesis flags)
 SYNTH_SCRIPT = ../scripts/synth.tcl
 GENUS_FLAGS = -abort_on_error -lic_startup Genus_Synthesis -lic_startup_options Genus_Physical_Opt -log genus_$(FREQ_MHZ)MHz_$(LIB_TYPE) -overwrite -f $(SYNTH_SCRIPT)
@@ -316,6 +318,9 @@ all: sim_rtl
 
 sim_rtl:
 	bash -l -c "module add $(XCELIUM_MOD) && cd $(FRONTEND_DIR) && xrun $(XRUN_FLAGS)"
+
+sim_rtl_bb:
+	bash -l -c "module add $(XCELIUM_MOD) && cd $(FRONTEND_DIR) && xrun $(XRUN_FLAGS_BB)"
 
 synth:
 	@MATCHING_DIR=$$(find $(BACKEND_DIR)/synthesis/reports -maxdepth 1 -type d -name "$(DESIGNS)_$(LIB_TYPE)_$(FREQ_MHZ)_$(RUNTIME)" 2>/dev/null | head -n 1); \

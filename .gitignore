@@ -12,8 +12,11 @@ backend/synthesis/deliverables/
 # Innovus generated files
 innovus*
 
-# Innovus generated files
+# Genus generated files
 genus*
+
+clusterization.geom.rpt
+clusterization.geom.rpt.old
 
 # Fichiers/dossiers générés frontend
 frontend/clusterization
