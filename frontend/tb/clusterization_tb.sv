@@ -311,7 +311,8 @@ module clusterization_tb #(
             $fwrite(fd_cluster, "%f %f ", xf_real, yf_real);
 
             //save_memory_cluster(addr_file);
-            $fdisplay(fd_cluster, "%0d", dut_clusterization.mem_cluster.cluster[addr_file]);
+            //$fdisplay(fd_cluster, "%0d", dut_clusterization.mem_cluster.cluster[addr_file]);
+            $fdisplay(fd_cluster, "%0d", dut_clusterization.mem_cluster.u_ram.memory[addr_file]);
 
             addr_file++;
         end
