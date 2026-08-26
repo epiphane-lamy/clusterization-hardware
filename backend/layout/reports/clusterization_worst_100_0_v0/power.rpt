@@ -1,0 +1,99 @@
+*----------------------------------------------------------------------------------------
+*	Innovus 25.10-p002_1 (64bit) 04/23/2025 12:43 (Linux 4.18.0-305.el8.x86_64)
+*	
+*
+* 	Date & Time:	2026-Aug-26 14:55:03 (2026-Aug-26 17:55:03 GMT)
+*
+*----------------------------------------------------------------------------------------
+*
+*	Design: clusterization
+*
+*	Liberty Libraries used: 
+*	        analysis_normal_slow_max: /home/epiphane/projets/clusterization/backend/layout/deliverables/clusterization_worst_100_0_corrected/libs/mmmc/slow_vdd1v0_basicCells.lib
+*	        analysis_normal_slow_max: /home/epiphane/projets/clusterization/backend/layout/deliverables/clusterization_worst_100_0_corrected/libs/mmmc/RAM_4096x32.lib
+*	        analysis_normal_slow_max: /home/epiphane/projets/clusterization/backend/layout/deliverables/clusterization_worst_100_0_corrected/libs/mmmc/RAM2P_1024x32.lib
+*
+*	Power Domain used: 
+*              Rail:        VDD      Voltage:        0.9 
+*
+*       Power View : analysis_normal_slow_max
+*
+*       User-Defined Activity : N.A.
+*
+*       Activity File: N.A.
+*
+*       Hierarchical Global Activity: N.A.
+*
+*       Global Activity: N.A.
+*
+*       Sequential Element Activity: 0.200000
+*
+*       Primary Input Activity: 0.200000
+*
+*       Default icg ratio: N.A.
+*
+*       Global Comb ClockGate Ratio: N.A.
+*
+*	Power Units = 1mW
+*
+*	Time Units = 1e-09 secs 
+*
+*       report_power -outfile backend/layout/reports/clusterization_worst_100_0_v0/power.rpt
+*
+-----------------------------------------------------------------------------------------
+
+
+Total Power 
+-----------------------------------------------------------------------------------------
+Total Internal Power:       10.35456628 	   91.8905%
+Total Switching Power:       0.91216930 	    8.0949%
+Total Leakage Power:         0.00164384 	    0.0146%
+Total Power:                11.26837942 
+-----------------------------------------------------------------------------------------
+
+
+Group                           Internal   Switching     Leakage       Total  Percentage 
+                                Power      Power         Power         Power  (%)        
+-----------------------------------------------------------------------------------------
+Sequential                         1.083     0.05584   0.0004817       1.139       10.11 
+Macro                              8.615     0.01105           0       8.626       76.55 
+IO                                     0           0           0           0           0 
+Combinational                     0.5977      0.6617    0.001142       1.261       11.19 
+Clock (Combinational)            0.05891      0.1836   1.985e-05      0.2425       2.152 
+Clock (Sequential)                     0           0           0           0           0 
+-----------------------------------------------------------------------------------------
+Total                              10.35      0.9122    0.001644       11.27         100 
+-----------------------------------------------------------------------------------------
+
+
+Rail                  Voltage   Internal   Switching     Leakage       Total  Percentage 
+                                Power      Power         Power         Power  (%)        
+-----------------------------------------------------------------------------------------
+VDD                       0.9      10.35      0.9122    0.001644       11.27         100 
+
+
+Clock                           Internal   Switching     Leakage       Total  Percentage 
+                                Power      Power         Power         Power  (%)        
+-----------------------------------------------------------------------------------------
+clk                              0.05891      0.1836   1.985e-05      0.2425       2.152 
+-----------------------------------------------------------------------------------------
+Total (excluding duplicates)     0.05891      0.1836   1.985e-05      0.2425       2.152 
+-----------------------------------------------------------------------------------------
+Clock: clk
+Clock Period: 0.010000 usec 
+Clock Toggle Rate:   200.0000 Mhz 
+Clock Static Probability:  0.5000
+
+
+
+-----------------------------------------------------------------------------------------
+*	Power Distribution Summary: 
+*                Highest Average Power:          memory_act/u_ram (RAM_4096X32):            2.338 
+*                Highest Leakage Power:           FE_OFC2382_done (CLKBUFX20):         6.25e-07 
+*          Total Cap:      7.70446e-11 F
+*          Total instances in design: 24170
+*          Total instances in design with no power:     0
+*          Total instances in design with no activity:     0
+*          Total Fillers and Decap:     0
+-----------------------------------------------------------------------------------------
+

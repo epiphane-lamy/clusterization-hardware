@@ -79,9 +79,9 @@ check_floorplan
 #edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -edge 1 -layer 1 -spread_type center -spacing 1.0 -pin $TOP_CORE_PINS 
 #edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -edge 2 -layer 1 -spread_type center -spacing 1.0 -pin $RIGHT_CORE_PINS 
 #edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -edge 3 -layer 1 -spread_type center -spacing 1.0 -pin $BOTTOM_CORE_PINS 
-edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Left -layer 5 -spread_type range -start 0.0 310.0 -end 0.0 435.0 -pin $LEFT_CORE_PINS
-edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Right -layer 5 -spread_type range -start 0.0 435.0 -end 0.0 310.0 -pin $RIGHT_CORE_PINS
-edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Bottom -layer 5 -spread_type range -start 860.0 0.0 -end 790.0 0.0 -pin $BOTTOM_CORE_PINS
+edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Left -layer 5 -spread_type range -start 0.0 313.0 -end 0.0 377.0 -pin $LEFT_CORE_PINS
+edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Right -layer 5 -spread_type range -start 0.0 377.0 -end 0.0 313.0 -pin $RIGHT_CORE_PINS
+edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Bottom -layer 5 -spread_type range -start 803.0 0.0 -end 779.0 0.0 -pin $BOTTOM_CORE_PINS
 
 #----------------------------------------------------------------------------- 
 # Power planning (Rings & Stripes)

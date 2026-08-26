@@ -90,7 +90,7 @@ A brief exploration of how far the design could be pushed past the 100 MHz targe
 | 120 MHz | +0.042 ns (passes) | −0.100 ns (fails) |
 | 125 MHz | −0.037 ns (fails) | −0.128 ns (fails) |
 
-Setup timing closed comfortably up to 120 MHz, but the existing hold violation persists (as expected, since hold doesn't improve with a faster clock) and setup itself breaks down by 125 MHz. 100 MHz was kept as the reported target for both `v0` and `v7` above; this exploration is noted here as a data point on the design's headroom, not as a change to either reported configuration.
+Setup timing closed comfortably up to 120 MHz (DRC clean), but the existing hold violation persists (as expected, since hold doesn't improve with a faster clock) and setup itself breaks down by 125 MHz. 100 MHz was kept as the reported target for both `v0` and `v7` above; this exploration is noted here as a data point on the design's headroom, not as a change to either reported configuration.
 
 ## 5. Layout views
 
