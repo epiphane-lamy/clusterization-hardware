@@ -7,7 +7,7 @@
 // write gated by we.
 //
 // This module shares its name and port list with the ASIC macro-backed
-// wrapper (synth/memory_dual_port_synth.sv) so that switching targets
+// wrapper (synth_files/memory_dual_port_synth.sv) so that switching targets
 // requires no change anywhere else in the design. See
 // docs/blocks/coord_mem_wrapper.md for the full comparison.
 //=============================================================================

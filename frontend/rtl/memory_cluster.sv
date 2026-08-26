@@ -1,6 +1,23 @@
+//=============================================================================
+// Module: memory_cluster (behavioral model)
+//
+// Stores the cluster number assigned to each point (see docs/blocks/
+// cluster_assign.md). Valid bits are stored separately from the cluster
+// data so that they can be reset independently (valid_cluster = 0 means
+// the point's cluster is not yet assigned, see ADR-0006).
+//
+// Memory accesses are synchronous. The read address is registered so that
+// data is available with a one-cycle read latency.
+//
+// Shares its name and port list with the ASIC macro-backed wrapper
+// (synth_files/memory_cluster_synth.sv) so that switching targets requires no
+// change anywhere else in the design. See docs/blocks/cluster_mem_wrapper.md
+// for the full comparison, including why the valid bits specifically stay
+// as flip-flops rather than moving into the macro.
+//=============================================================================
 
 module memory_cluster #(
-    parameter int ADDR_W = 7           // largeur des adresses clusters
+    parameter int ADDR_W = 7   // Address width
 	)(
     input  logic       clk,
     input  logic       rst_n,
@@ -13,21 +30,9 @@ module memory_cluster #(
     output logic [ADDR_W-1:0] data_out
     );
 
-    //------------------------------------------------------------------------------
-    // Memory cluster
-    //
-    // Stores the number of each cluster
-    //
-    // Memory accesses are synchronous. The read address is registered so that the
-    // data is available with a one-cycle read latency.
-    //
-    // Valid bits are stored separately from the cache data so that they can be
-    // reset independently (valid_cluster = 0 means cluster non initialised)
-    //------------------------------------------------------------------------------
-    
     logic [ADDR_W-1:0] cluster [0:(2**ADDR_W)-1];
 
-    // Separate resettable storage for the valid bits
+    // Separate, synchronously resettable storage for the valid bits
     logic valid_array [0:(2**ADDR_W)-1];
 
     always_ff @(posedge clk or negedge rst_n) begin
