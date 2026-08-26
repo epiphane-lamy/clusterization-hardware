@@ -1,161 +1,166 @@
-# Architecture — Moteur de clustering 2D basé sur l'entropie
+# Architecture — Entropy-Based 2D Clustering Engine
 
-Ce document détaille le cheminement complet du projet : du modèle logiciel de référence fourni par le laboratoire jusqu'à l'architecture matérielle SystemVerilog qui en découle, en passant par la quantification et les arbitrages de conception. Pour une vue d'ensemble rapide, voir le [README](../README.md). Pour le détail argumenté de chaque choix fort, voir les [ADR](decisions/).
+This document walks through the full path of the project: from the software reference model provided by the lab to the SystemVerilog hardware architecture derived from it, covering the quantization work and the design trade-offs along the way. For a quick overview, see the [README](../README.md). For the detailed, argued rationale behind each major decision, see the [ADRs](decisions/).
 
-> **Périmètre de ce document** : architecture toplevel et décisions de conception qui structurent le projet. Le détail micro-architectural interne des blocs de calcul [exp](blocks/exp_block.md), [grad](blocks/grad_block.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) est couvert dans [blocks](blocks/).
-
----
-
-## 1. Le modèle logiciel de référence
-
-Le point de départ est un algorithme de clustering 2D développé par un collègue du laboratoire (Elias De Almeida Ramos), écrit en C, en flottant double précision. Sa particularité, et la raison pour laquelle il a été retenu comme candidat au portage matériel, est qu'il **n'a pas besoin de connaître à l'avance le centre du nuage de points** pour fonctionner : le regroupement se fait par un mécanisme itératif basé sur le calcul d'entropie de chaque point par rapport à ses voisins, plutôt que par une distance à un centroïde fixé a priori (contrairement à k-means par exemple).
-
-À chaque itération (`step`), l'algorithme :
-1. Calcule une matrice de similarité `P` entre tous les points, via un noyau gaussien appliqué à la distance euclidienne entre chaque paire de points.
-2. Normalise chaque ligne de `P` (somme = 1).
-3. Calcule l'entropie de chaque ligne, utilisée pour moduler l'intensité du déplacement du point correspondant.
-4. Calcule un gradient (déplacement pondéré vers les voisins similaires) et met à jour la position de chaque point.
-5. Répète sur `N` itérations, jusqu'à convergence des points en amas distincts.
-6. Une passe finale associe un numéro de cluster à chaque point regroupé.
-
-C'est cette structure en deux temps — **la boucle itérative qui déplace les points** puis **l'association finale des clusters** — qui a directement guidé le découpage de l'architecture matérielle en deux parties (voir §3).
+> **Scope of this document**: the toplevel architecture and the design decisions that structure the project. The internal micro-architecture of the compute blocks — [exp](blocks/exp_block.md), [grad](blocks/grad_block.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) — is covered in [blocks/](blocks/).
 
 ---
 
-## 2. Le constat qui a orienté toute l'architecture : la matrice O(n²)
+## 1. The software reference model
 
-En analysant le code de référence, le premier problème saute aux yeux : à chaque itération, l'algorithme construit et stocke intégralement une matrice `P` de taille `N × N` avec `N` le nombre de points du benchmark.
+The starting point is a 2D clustering algorithm developed by a colleague at the lab (Elias De Almeida Ramos), written in C, in double-precision floating point. Its defining feature — and the reason it was picked as a candidate for hardware porting — is that it **does not need to know the center of the point cloud in advance** to work: grouping happens through an iterative mechanism based on computing each point's entropy relative to its neighbours, rather than through a distance to a centroid fixed a priori (unlike k-means, for instance).
 
-Pour un jeu de test raisonnable de 1000 points, cela représente **1 000 000 de coefficients**. Même codés sur 16 bits (format Q0.16 après quantification), cela correspond à **2 Mo de mémoire, à reconstruire à chaque itération, pour une seule des N itérations de l'algorithme**. Sur une cible FPGA de taille modeste, ou a fortiori en vue d'un flot ASIC où chaque bit de mémoire a un coût en surface, cette approche telle quelle est inenvisageable.
+At each iteration (`step`), the algorithm:
+1. Computes a similarity matrix `P` between all points, via a Gaussian kernel applied to the Euclidean distance between each pair of points.
+2. Normalizes each row of `P` (sum = 1).
+3. Computes the entropy of each row, used to modulate how strongly the corresponding point moves.
+4. Computes a gradient (a weighted displacement toward similar neighbours) and updates each point's position.
+5. Repeats over `N` iterations, until the points converge into distinct clusters.
+6. A final pass assigns a cluster number to each grouped point.
 
-Ce constat a fixé l'objectif numéro un de l'architecture avant même de commencer à découper les blocs de calcul : **ne jamais stocker la matrice `P` complète**. Tout le reste des choix de conception (streaming ligne par ligne, ping-pong, calcul de la somme de normalisation à la volée) découle de cette contrainte.
-
-Voir [ADR-0002](decisions/0002-single-row-streaming-vs-full-matrix.md) pour le détail de ce choix et l'alternative écartée.
-
----
-
-## 3. Vue d'ensemble : deux parties fonctionnelles
-
-L'architecture matérielle reprend la structure du modèle logiciel en deux blocs de plus haut niveau, correspondant chacun à une des étapes de l'algorithme d'origine.
-
-### Partie 1 — Boucle itérative (répétée `N` fois)
-
-![Architecture logicielle de référence, partie 1](img/archi_part1_software.png)
-
-*Modèle logiciel de référence pour une itération : construction de `P`, calcul du gradient, mise à jour des coordonnées.*
-
-Cette étape est traduite matériellement par le pipeline suivant, exécuté une fois par itération :
-
-![Architecture matérielle toplevel, une itération](img/archi_part1.png)
-
-Le flux de données suit la même logique que le modèle logiciel (`exp` → matrice `P` → `grad` → mise à jour des coordonnées), mais **sans jamais matérialiser `P` en entier** : c'est tout l'objet du bloc `ping pong arbiter` au centre du schéma, détaillé au §4.
-
-### Partie 2 — Association finale des clusters
-
-![Architecture logicielle de référence, partie 2](img/archi_part2_software.png)
-
-Une fois les `N` itérations terminées, les coordonnées finales des points ont convergé en amas. Le bloc `cluster assign` associe alors un numéro de cluster à chaque point à partir de leur position finale :
-
-![Architecture matérielle toplevel, association des clusters](img/archi_part2.png)
-
-
-Un point de conception toplevel mérite d'être noté ici : la mémoire `memory cluster` associe à chaque point son numéro de cluster, mais un point peut ne pas encore avoir été assigné. Là où le modèle logiciel de référence utilise une valeur sentinelle (`-1`) pour représenter cet état, l'architecture matérielle porte cette information via un **bit de validité dédié** (`valid_cluster`, visible sur le schéma ci-dessus) plutôt que par une valeur réservée dans le champ numéro-de-cluster. Voir [ADR-0006](decisions/0006-valid-bit-for-unassigned-cluster.md).
+It's this two-phase structure — **the iterative loop that moves the points**, then **the final cluster assignment** — that directly drove the hardware architecture's split into two parts (see §3).
 
 ---
 
-## 4. Architecture mémoire de la boucle itérative
+## 2. The observation that shaped the whole architecture: the O(n²) matrix
 
-C'est le cœur technique du projet. Trois problèmes s'enchaînent, chacun résolu par un choix d'architecture spécifique.
+Looking at the reference code, the first problem jumps out immediately: at every iteration, the algorithm builds and fully stores an `N × N` matrix `P`, where `N` is the number of points in the benchmark.
 
-### 4.1 Ne stocker qu'une ligne de `P` à la fois
+For a reasonable test set of 1000 points, that's **1,000,000 coefficients**. Even encoded on 16 bits (Q0.16 format after quantization), that's **2 MB of memory, rebuilt every single iteration, for just one of the N iterations of the algorithm**. On a modest FPGA target, or even more so with an ASIC flow in mind where every bit of memory has a direct area cost, this approach is simply not viable as-is.
 
-Plutôt que de construire `P` en entier, le bloc `exp` produit `P` **ligne par ligne** : pour un point `i` donné, il calcule les `N` coefficients `P[i][0..N-1]` et les écrit dans une mémoire tampon ne pouvant contenir qu'une seule ligne. Le bloc `grad` vient ensuite lire cette ligne pour calculer la contribution au gradient du point `i`. Une fois cette ligne consommée, `exp` peut écrire la suivante.
+This observation set the architecture's top priority before a single compute block was even sketched out: **never store the full `P` matrix**. Every other design choice (row-by-row streaming, ping-pong buffering, on-the-fly normalization sum) follows directly from this constraint.
 
-Cela fait chuter l'empreinte mémoire de `O(N²)` à `O(N)` — pour 1000 points, on passe de 2 Mo à quelques ko.
-
-### 4.2 Le ping-pong entre deux mémoires de ligne
-
-Le simple enchaînement séquentiel décrit ci-dessus (exp écrit → grad lit → exp écrit à nouveau) introduit un temps mort important : `grad` doit attendre que `exp` ait fini d'écrire, et `exp` doit attendre que `grad` ait fini de lire avant de réutiliser le buffer.
-
-Pour recouvrir ces deux phases, l'architecture utilise **deux mémoires de ligne (A et B)** pilotées par un bloc `ping pong arbiter` : pendant que `exp` écrit la ligne `i+1` dans la mémoire A, `grad` lit simultanément la ligne `i` (déjà produite) dans la mémoire B. Une fois les deux terminés, l'arbitre échange les rôles des deux mémoires, sans copie de données — seule la table d'aiguillage change.
-
-Voir [ADR-0003](decisions/0003-ping-pong-buffering.md).
-
-### 4.3 Duplication des mémoires de coordonnées
-
-Ce recouvrement introduit à son tour une contrainte annexe : les blocs `exp` et `grad` ont besoin de lire les coordonnées des points **simultanément** (chacun pour sa propre ligne en cours de traitement). Une seule mémoire de coordonnées à un seul port de lecture les ferait entrer en conflit d'accès.
-
-La solution retenue est de **dupliquer** la mémoire de coordonnées (une copie pour `exp`, une pour `grad`). C'est un choix qui va, en apparence, à l'encontre de l'objectif initial de sobriété mémoire — mais le coût est marginal : les coordonnées sont codées sur 16 bits en Q8.8, donc même dupliquée, cette mémoire reste largement plus petite que l'aurait été la matrice `P` complète. En contrepartie, les deux blocs de calcul peuvent travailler en parallèle, ce qui divise le temps de calcul par deux. Ce compromis est détaillé dans le même ADR-0003.
-
-### 4.4 Organisation "dual-port" des mémoires de coordonnées
-
-Chaque mémoire de coordonnées est organisée pour qu'une seule adresse (l'indice du point) retourne en sortie **les deux composantes `x` et `y`** de ce point simultanément, plutôt que d'avoir à faire deux accès séparés. Les deux valeurs d'un même point restent ainsi toujours accédées ensemble, ce qui simplifie l'interface avec `exp` et `grad`.
-
-### 4.5 Mémoire de mise à jour (`memory update`)
-
-Au fur et à mesure que `grad` calcule les contributions de mise à jour pour chaque point, les résultats sont accumulés dans une mémoire `memory update`, de taille comparable aux mémoires de coordonnées (deux valeurs Q8.8 par point : mise à jour de `x` et de `y`). Une fois que tous les points de l'itération ont été traités, cette mémoire est pleine, et le bloc `upd` peut appliquer la mise à jour aux deux mémoires de coordonnées pour clore l'itération en cours.
-
-### 4.6 Format de la ligne de `P`
-
-Chaque mémoire de ligne (A ou B) contient `N` coefficients codés sur 16 bits en format **Q0.16** (valeurs de similarité normalisées entre 0 et 1).
+See [ADR-0002](decisions/0002-single-row-streaming-vs-full-matrix.md) for the full discussion of this choice and the alternative that was ruled out.
 
 ---
 
-## 5. Fonctions non linéaires : `exp()` et l'inverse, sans CORDIC
+## 3. Overview: two functional parts
 
-Le calcul du noyau gaussien (matrice `P`) nécessite une exponentielle, et la normalisation de chaque ligne nécessite une division (implémentée comme une multiplication par l'inverse de la somme).
+The hardware architecture mirrors the software model's structure with two higher-level blocks, each corresponding to one phase of the original algorithm.
 
-L'implémentation matérielle classique de ces deux fonctions serait CORDIC — mais l'architecture combinatoire ou pipeline que cela demande est lourde à intégrer pour un gain qui n'est pas justifié ici. Une étude de la plage réelle des arguments pris par `exp()` sur le modèle logiciel de référence a montré que cette plage est en réalité **étroite et bornée** (l'argument, toujours négatif, sature rapidement vers 0 en dessous d'un certain seuil). Cela a permis de remplacer CORDIC par deux **LUT** :
+### Part 1 — Iterative loop (repeated `N` times)
 
-- **LUT `exp`** : adressée directement par l'argument quantifié (format Q6.10), 10241 entrées codées en Q0.16.
-- **LUT inverse (`inv`)** : utilisée pour la normalisation. Contrairement à la LUT `exp`, son adressage se fait par la **mantisse** de la somme de ligne (extraction de bit de poids fort + décalage), ce qui permet de couvrir une large plage dynamique de valeurs de somme avec seulement 1024 entrées.
+![Software reference architecture, part 1](img/archi_part1_software.png)
 
-Voir [ADR-0004](decisions/0004-lut-exponential-vs-cordic.md).
+*Software reference model for one iteration: building `P`, computing the gradient, updating coordinates.*
 
----
+This step is translated into hardware by the following pipeline, executed once per iteration:
 
-## 6. Normalisation en flux, sans buffer caché
+![Hardware toplevel architecture, one iteration](img/archi_part1.png)
 
-La normalisation d'une ligne de `P` nécessite la somme de tous ses coefficients. Plutôt que de recalculer cette somme dans une passe séparée, elle est accumulée **directement par le bloc `exp`**, au fur et à mesure qu'il produit et écrit les coefficients non normalisés dans la mémoire A ou B. Le bloc `grad`, lorsqu'il lit ensuite cette ligne, applique la normalisation via la LUT inverse décrite au §5.
+The data flow follows the same logic as the software model (`exp` → matrix `P` → `grad` → coordinate update), but **without ever materializing `P` in full**: that's the entire purpose of the `ping pong arbiter` block at the center of the diagram, detailed in §4.
 
-Ce choix maintient le principe directeur de toute l'architecture : **aucune mémoire cachée dans les blocs de calcul, aucune donnée intermédiaire stockée en dehors des buffers de ligne identifiés** — tout se fait en flux, dans un pipeline.
+### Part 2 — Final cluster assignment
 
----
+![Software reference architecture, part 2](img/archi_part2_software.png)
 
-## 7. Entropie : Gini plutôt que Shannon
+Once the `N` iterations are complete, the points' final coordinates have converged into clusters. The `cluster assign` block then assigns a cluster number to each point based on its final position:
 
-Le calcul d'entropie de chaque ligne de `P` (utilisé pour moduler la force de déplacement de chaque point) pose, dans le modèle logiciel de référence, le même problème que l'exponentielle : l'entropie de Shannon nécessite un `log()`.
+![Hardware toplevel architecture, cluster assignment](img/archi_part2.png)
 
-Plutôt que d'ajouter une deuxième LUT non linéaire pour `log()`, l'architecture matérielle utilise l'**entropie de Gini** comme substitut : une mesure de dispersion algébriquement équivalente pour l'usage recherché ici, mais qui se calcule uniquement à partir d'une somme de carrés des coefficients de la ligne — donc directement à partir des multiplieurs déjà présents dans le pipeline, sans fonction non linéaire supplémentaire.
-
-Voir [ADR-0005](decisions/0005-gini-entropy-vs-shannon.md) pour la comparaison chiffrée entre les deux mesures et l'écart accepté par rapport au modèle de référence.
+One toplevel design point is worth noting here: the `memory cluster` associates a cluster number with each point, but a point may not yet have been assigned one. Where the software reference model uses a sentinel value (`-1`) to represent that state, the hardware architecture carries this information through a **dedicated valid bit** (`valid_cluster`, visible on the diagram above) rather than a reserved value in the cluster-number field. See [ADR-0006](decisions/0006-valid-bit-for-unassigned-cluster.md).
 
 ---
 
-## 8. Chaîne de quantification et modèle de référence bit-exact
+## 4. Memory architecture of the iterative loop
 
-L'ensemble de la chaîne de calcul (distance, argument de l'exponentielle, coefficients de `P`, gradient, mise à jour de position) a été quantifié **étape par étape**, en mesurant l'erreur introduite à chaque étage par rapport au calcul flottant équivalent, plutôt que par une conversion globale approximative en une seule passe. Cela a permis de dimensionner chaque format Q au plus juste (ni sur-dimensionné en surface, ni sous-dimensionné au point de dégrader la convergence de l'algorithme).
+This is the technical core of the project. Three problems chain into each other, each solved by a specific architectural choice.
 
-| Grandeur | Format | Remarque |
+### 4.1 Storing only one row of `P` at a time
+
+Rather than building `P` in full, the `exp` block produces `P` **row by row**: for a given point `i`, it computes the `N` coefficients `P[i][0..N-1]` and writes them into a buffer memory that can only hold a single row. The `grad` block then reads that row to compute point `i`'s contribution to the gradient. Once that row has been consumed, `exp` can write the next one.
+
+This drops the memory footprint from `O(N²)` to `O(N)` — for 1000 points, that's a drop from 2 MB to a few KB.
+
+### 4.2 Ping-pong between two row buffers
+
+The straightforward sequential chaining described above (exp writes → grad reads → exp writes again) introduces significant dead time: `grad` has to wait for `exp` to finish writing, and `exp` has to wait for `grad` to finish reading before it can reuse the buffer.
+
+To overlap these two phases, the architecture uses **two row buffers (A and B)** driven by a `ping pong arbiter` block: while `exp` writes row `i+1` into buffer A, `grad` simultaneously reads row `i` (already produced) from buffer B. Once both are done, the arbiter swaps the two buffers' roles, with no data copy — only the routing table changes.
+
+See [ADR-0003](decisions/0003-ping-pong-buffering.md).
+
+### 4.3 Duplicating the coordinate memories
+
+This overlap introduces a secondary constraint of its own: the `exp` and `grad` blocks need to read point coordinates **simultaneously** (each for the row it's currently processing). A single coordinate memory with one read port would put them in access conflict.
+
+The solution adopted is to **duplicate** the coordinate memory (one copy for `exp`, one for `grad`). On the face of it, this works against the initial goal of memory frugality — but the cost is marginal: coordinates are encoded on 16 bits in Q8.8, so even duplicated, this memory remains far smaller than the full `P` matrix would have been. In exchange, the two compute blocks can work in parallel, halving compute time. This trade-off is detailed in the same ADR-0003.
+
+### 4.4 "Dual-port"-style organization of the coordinate memories
+
+Each coordinate memory is organized so that a single address (the point index) returns **both the `x` and `y` components** of that point at once, rather than requiring two separate accesses. A point's two values thus always stay accessed together, which simplifies the interface with `exp` and `grad`.
+
+### 4.5 Update memory (`memory update`)
+
+As `grad` computes the update contribution for each point, the results are accumulated into a `memory update`, comparable in size to the coordinate memories (two Q8.8 values per point: the `x` and `y` updates). Once every point in the iteration has been processed, this memory is full, and the `upd` block can apply the update to both coordinate memories to close out the current iteration.
+
+### 4.6 `P` row format
+
+Each row memory (A or B) holds `N` coefficients encoded on 16 bits in **Q0.16** format (normalized similarity values between 0 and 1).
+
+---
+
+## 5. Nonlinear functions: `exp()` and the inverse, without CORDIC
+
+Computing the Gaussian kernel (matrix `P`) requires an exponential, and normalizing each row requires a division (implemented as a multiplication by the inverse of the sum).
+
+The classic hardware implementation of these two functions would be CORDIC — but the combinational or pipelined architecture it requires is heavy to integrate for a gain that isn't justified here. A study of the actual range of arguments taken by `exp()` on the software reference model showed that this range is in fact **narrow and bounded** (the argument, always negative, saturates quickly toward 0 below a certain threshold). This made it possible to replace CORDIC with two **LUTs**:
+
+- **`exp` LUT**: addressed directly by the quantized argument (Q6.10 format), 10241 entries encoded in Q0.16.
+- **Inverse LUT (`inv`)**: used for normalization. Unlike the `exp` LUT, it is addressed by the **mantissa** of the row sum (MSB extraction + shift), which covers a wide dynamic range of sum values with only 1024 entries.
+
+See [ADR-0004](decisions/0004-lut-exponential-vs-cordic.md).
+
+---
+
+## 6. Streaming normalization, with no hidden buffer
+
+Normalizing a row of `P` requires the sum of all its coefficients. Rather than recomputing that sum in a separate pass, it is accumulated **directly by the `exp` block**, as it produces and writes the unnormalized coefficients into buffer A or B. The `grad` block, when it later reads that row, applies the normalization via the inverse LUT described in §5.
+
+This choice upholds the guiding principle of the whole architecture: **no hidden memory inside the compute blocks, no intermediate data stored outside the identified row buffers** — everything happens in a flow, within a pipeline.
+
+---
+
+## 7. Entropy: Gini rather than Shannon
+
+Computing the entropy of each row of `P` (used to modulate how strongly each point moves) runs into, in the software reference model, the same problem as the exponential: Shannon entropy requires a `log()`.
+
+Rather than adding a second nonlinear LUT for `log()`, the hardware architecture uses **Gini entropy** as a substitute: a dispersion measure that is algebraically equivalent for the purpose needed here, but which is computed purely from a sum of squares of the row's coefficients — directly from the multipliers already present in the pipeline, with no additional nonlinear function.
+
+See [ADR-0005](decisions/0005-gini-entropy-vs-shannon.md) for the quantified comparison between the two measures and the deviation accepted relative to the reference model.
+
+---
+
+## 8. Quantization chain and bit-exact reference model
+
+The entire compute chain (distance, exponential argument, `P` coefficients, gradient, position update) was quantized **stage by stage**, measuring the error introduced at each stage against the equivalent floating-point computation, rather than through a single approximate global conversion. This made it possible to size each Q format as tightly as possible (neither over-sized in area, nor under-sized to the point of degrading the algorithm's convergence).
+
+| Quantity | Format | Note |
 |---|---|---|
-| Coordonnées des points (`X_f`, `Y_f`) | Q8.8, 16 bits | Suffisant après normalisation initiale des points dans la plage [0, 255] |
-| Argument de l'exponentielle | Q6.10 | Plage réduite justifiant la LUT (§5) |
-| Coefficients de `P` (non normalisés puis normalisés) | Q0.16 | Sortie directe de la LUT `exp`, réutilisée telle quelle après normalisation |
-| Somme de ligne / adressage LUT inverse | Mantisse extraite dynamiquement | Couvre une large plage dynamique avec une LUT de taille fixe |
-| Entropie de Gini (`H_fixed`) | Q0.16 | Complément à 1 de la somme des carrés normalisés |
+| Point coordinates (`X_f`, `Y_f`) | Q8.8, 16 bits | Sufficient after the initial normalization of points into the [0, 255] range |
+| Exponential argument | Q6.10 | Narrow range justifying the LUT (§5) |
+| `P` coefficients (unnormalized then normalized) | Q0.16 | Direct output of the `exp` LUT, reused as-is after normalization |
+| Row sum / inverse LUT addressing | Dynamically extracted mantissa | Covers a wide dynamic range with a fixed-size LUT |
+| Gini entropy (`H_fixed`) | Q0.16 | One's complement of the sum of normalized squares |
 
-Cette quantification étage par étage a un second bénéfice, indépendant du dimensionnement des bus : une fois appliquée intégralement, elle permet de faire tourner le **modèle logiciel de référence entièrement en fixed-point**, en parallèle de sa version flottante d'origine. Ce modèle "bit-exact" produit tous les résultats intermédiaires attendus du hardware (matrice `P`, gradients, entropies, mises à jour), et sert de référence directe pour les testbenchs : les résultats de simulation RTL sont comparés directement à ce modèle plutôt qu'à une resimulation flottante approximative.
+This stage-by-stage quantization has a second benefit, independent of bus sizing: once applied throughout, it makes it possible to run the **software reference model entirely in fixed-point**, alongside its original floating-point version. This "bit-exact" model produces every intermediate result expected from the hardware (matrix `P`, gradients, entropies, updates), and serves as a direct reference for the testbenches: RTL simulation results are compared directly against this model rather than against an approximate floating-point resimulation.
 
-Voir [ADR-0001](decisions/0001-fixed-point-quantization-chain.md).
+See [ADR-0001](decisions/0001-fixed-point-quantization-chain.md).
 
 ---
 
-## 9. Stratégie de vérification
+## 9. Verification strategy
 
-La vérification du design suit deux niveaux, tous deux comparés au modèle de référence bit-exact décrit au §8 plutôt qu'à une resimulation flottante :
+Design verification follows two levels, both compared against the bit-exact reference model described in §8 rather than against a floating-point resimulation:
 
-- **Testbenchs unitaires**, un par bloc de calcul (`exp`, `grad`, `upd`, `cluster_assign`), permettant d'isoler et de valider le comportement de chaque bloc indépendamment du reste de la chaîne — utile en particulier pour déboguer un bloc sans dépendre de la disponibilité ou de la correction des autres.
-- **Testbench d'intégration global ou partiellement globel**, exerçant des ensembles ou la totalité du pipeline toplevel sur un jeu de points complet, et comparant les résultats de bout en bout — coordonnées finales et clusters assignés — à ceux produits par le modèle de référence.
+- **Unit testbenches**, one per compute block (`exp`, `grad`, `upd`, `cluster_assign`), used to isolate and validate each block's behavior independently of the rest of the chain — particularly useful for debugging a block without depending on the availability or correctness of the others.
+- **Global or partially-global integration testbenches**, exercising subsets of, or the entire, toplevel pipeline on a full point set, and comparing end-to-end results — final coordinates and assigned clusters — against those produced by the reference model.
 
-Dans les deux cas, la comparaison se fait directement contre les résultats intermédiaires produits par le modèle logiciel fixed-point (§8) : matrice `P` ligne par ligne, gradients, entropies, mises à jour de position. Un écart entre simulation RTL et modèle de référence est donc imputable sans ambiguïté au RTL, et non à un artefact de comparaison entre flottant et fixed-point.
+In both cases, the comparison is made directly against the intermediate results produced by the fixed-point software model (§8): the `P` matrix row by row, gradients, entropies, position updates. Any discrepancy between RTL simulation and the reference model is therefore unambiguously attributable to the RTL, not to a comparison artifact between floating-point and fixed-point.
 
+On top of this, the full system was verified **twice over**, on two different memory implementations:
+
+- With the **behavioral custom memories** (`memory_dual_port`, `memory_single_port`, `memory_cluster`) — the everyday simulation target, run via the `sim_rtl` Makefile target.
+- With the **macro-backed wrapper memories** (see [ADR-0007](decisions/0007-memory-macro-wrappers.md) and the `docs/blocks/*_mem_wrapper.md` files) — i.e. the same testbenches, but exercising the wrapper RTL that instantiates behavioral models of the ASIC black-box macros, run via a dedicated `sim_rtl_bb` Makefile target ("bb" for black box). This target loads a different filelist, pointing at the wrapper memories located under `frontend/synth_files` (the same source tree used for synthesis) instead of the plain behavioral memories.
+
+Every other testbench in the project runs under `sim_rtl` against the custom memories; only the full-system testbench needs to also be run under `sim_rtl_bb` to confirm the wrappers behave correctly end-to-end before trusting them through the ASIC flow. When switching between the two, the only thing that needs to change in the Makefile is the module name exported via `DESIGNS` — the testbench itself, and the comparison against the bit-exact reference model, stay exactly the same either way.

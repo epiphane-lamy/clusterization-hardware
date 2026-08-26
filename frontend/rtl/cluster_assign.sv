@@ -1,44 +1,63 @@
+//=============================================================================
+// Module: cluster_assign
+//
+// Final pass of the pipeline (see docs/ARCHITECTURE.md, "Partie 2"): scans
+// the converged point coordinates and assigns a cluster number to each
+// point, grouping points that ended up within a fixed distance tolerance
+// (TOL) of each other. Directly implements the reference model's final
+// grouping pass, with the -1 "unassigned" sentinel replaced by an explicit
+// valid bit (see ADR-0006).
+//
+// For each unassigned reference point i (found by scanning in order,
+// skipping points that are already labelled), this block labels i with a
+// new cluster number, then checks every unassigned candidate j > i against
+// i using the same dx/dy -> squares -> distance pipeline pattern as
+// dist_mat_arg_exp (see docs/blocks/exp_block.md), merging j into i's cluster
+// whenever the squared distance is within TOL.
+//
+// See docs/blocks/cluster_assign.md for the full block-level documentation.
+//=============================================================================
 
 
 module cluster_assign #(
-    parameter int NB_POINTS    = 8,           // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int COORD_W      = 16,           // largeur des coordonnees, fixed-point SIGNE
-    parameter int ADDR_W       = 7,           // largeur des adresses points Xf
-    parameter int TOL          = 422144877
+    parameter int NB_POINTS    = 8,        // Number of points.
+    parameter int COORD_W      = 16,       // Coordinate width, fixed-point
+    parameter int ADDR_W       = 7,        // Point / cluster address width
+    parameter int TOL          = 422144877 // Squared-distance tolerance, precomputed in software
 	)(
 	input  logic             clk,
 	input  logic             rst_n,
  
-    input logic              start,     // lance l'assignation des clusters
+    input logic              start, // Launches the clustering pass
 
-    // --- Port BRAM point (adresse incrementee chaque cycle) ---
+    // --- Final point coordinate BRAM port ---
     output logic [ADDR_W-1:0]  addr_coord,
     input  logic [COORD_W-1:0] coord_X,
     input  logic [COORD_W-1:0] coord_Y,
 
-    // --- Port BRAM clusters (adresse incrementee chaque cycle) ---
+    // --- Cluster memory port ---
     output logic [ADDR_W-1:0] addr_cluster,
     output logic              we_cluster,
-    input  logic              valid_cluster, // (=0 => cluster=-1 else !=-1)
+    input  logic              valid_cluster, // 0 = not yet assigned, 1 = already assigned (see ADR-0006)
     output logic [ADDR_W-1:0] cluster_out,
 
     output logic done
 );
 
-	// -------------------------------------------------------------------
-    // FSM de sequencement
+    // -------------------------------------------------------------------
+    // Sequencing FSM
     // -------------------------------------------------------------------
     typedef enum logic [3:0] {
-        S_IDLE,           // état initial
-        S_FETCH_I,        // emission addr_coord = cnt_i + addr_cluster = cnt_i
-        S_FETCH_WAIT,     // emission addr = cnt_j(=0) + capture de coord_X_i / coord_Y_i
-        S_WRITE_I,        // écriture de cluster[i]
-        S_FETCH_J,        // émet addr=cnt_j (pas d'écriture)
-        S_CHOICE_COMPUTE, // lit cluster_in (valide grâce au cycle précédent), puis décide
-        S_COMPUTE,        // calcul en cours
-        S_WRITE,          // écriture de cluster[j]
-        S_DRAIN,          // laisse le temps au pipeline de se vider
-        S_DONE            // calcul terminé
+        S_IDLE,           // Idle, waiting for start
+        S_FETCH_I,        // Issue addr_coord = addr_cluster = cnt_i
+        S_FETCH_WAIT,     // Issue addr = cnt_j (=0); capture coord_X_i / coord_Y_i
+        S_WRITE_I,        // Write cluster[i]
+        S_FETCH_J,        // Issue addr = cnt_j (read only)
+        S_CHOICE_COMPUTE, // Read back valid_cluster for j (valid thanks to the previous cycle), then decide
+        S_COMPUTE,        // Distance pipeline in flight
+        S_WRITE,          // writing cluster[j]
+        S_DRAIN,          // Let the pipeline flush
+        S_DONE            // Clustering pass complete
     } state_t;
  
     state_t current_state, next_state;
@@ -48,20 +67,20 @@ module cluster_assign #(
     logic [ADDR_W-1:0] cluster_out_i;
     logic [ADDR_W-1:0] cnt_j;
     
-    logic issue_i;       // 1 quand addr_i correspond a un i valide ce cycle
-    logic issue_j;       // 1 quand addr_j correspond a un j valide ce cycle
+    logic issue_i;       // 1 when addr carries a valid i-fetch this cycle
+    logic issue_j;       // 1 when addr carries a valid j-fetch this cycle
 
     assign issue_i = (current_state == S_FETCH_I) || (current_state == S_FETCH_WAIT) || (current_state == S_WRITE_I);
     assign issue_j = (current_state == S_FETCH_J) || (current_state == S_CHOICE_COMPUTE) || (current_state == S_WRITE);
  
     // -------------------------------------------------------------------
-    // Adressage BRAM
+    // BRAM address mux
     // -------------------------------------------------------------------
     assign addr_coord   = issue_i ? cnt_i : cnt_j;
     assign addr_cluster = issue_i ? cnt_i : cnt_j;
  
     // -------------------------------------------------------------------
-    // Gestion des compteurs i / j pour adressage coord / cluster
+    // i / j counter management for coord / cluster addressing
     // -------------------------------------------------------------------
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -81,7 +100,7 @@ module cluster_assign #(
 
                 S_FETCH_WAIT: begin
                     if ((cnt_i != NB_POINTS-1) && (valid_cluster == 1'b1))
-                            cnt_i <= cnt_i + 1'b1;   // on invrémente cnt_i si cluster_i est déjà attribué
+                            cnt_i <= cnt_i + 1'b1; // i already assigned: skip to the next i
                 end
 
                 S_WRITE_I: begin
@@ -90,7 +109,7 @@ module cluster_assign #(
                 end
 
                 S_CHOICE_COMPUTE: begin
-                    if (valid_cluster == 1'b1) begin          // j déjà labellisé -> on saute (pas de calcul)
+                    if (valid_cluster == 1'b1) begin // j already labelled -> skip (no distance check)
                         if (cnt_j != NB_POINTS-1)
                             cnt_j <= cnt_j + 1'b1;
                         else begin
@@ -98,7 +117,7 @@ module cluster_assign #(
                             num_cluster <= num_cluster + 1'b1;
                         end
                     end
-                    // si cluster_in == -1 : on part en S_COMPUTE, c'est S_WRITE qui gèrera l'avancée de cnt_j / cnt_i
+                    // If j is unassigned: move to S_COMPUTE; S_WRITE handles cnt_j / cnt_i advancement afterwards.
                 end
 
                 S_WRITE: begin
@@ -111,7 +130,7 @@ module cluster_assign #(
                 end
  
                 default: begin
-                    // cnt_i/cnt_j fixe
+                    // cnt_i / cnt_j held
                 end
             endcase
         end
@@ -119,7 +138,7 @@ module cluster_assign #(
 
     assign cluster_out_i = num_cluster;
 
-    // Compteur de vidage du pipeline
+    // Pipeline drain counter
     localparam int PIPE_DEPTH = 2; // nb d'etages du pipeline
     logic [$clog2(PIPE_DEPTH+1)-1:0] drain_cnt;
  
@@ -129,8 +148,9 @@ module cluster_assign #(
         else drain_cnt <= '0;
     end
  
+ 
     // -------------------------------------------------------------------
-    // FSM : transitions
+    // FSM: transition logic
     // -------------------------------------------------------------------
     logic valid_out;
 
@@ -139,10 +159,10 @@ module cluster_assign #(
         unique case (current_state)
             S_IDLE           : next_state = start ? S_FETCH_I : S_IDLE;
             S_FETCH_I        : next_state = S_FETCH_WAIT;
-            S_FETCH_WAIT     : next_state = (valid_cluster == 1'b0) ? S_WRITE_I : (cnt_i == NB_POINTS-1) ? S_DRAIN : S_FETCH_I; // ici, cluster est cluster_i
-            S_WRITE_I        : next_state = (cnt_i == NB_POINTS-1) ? S_DRAIN : S_FETCH_J; // écriture de cluster[i]
-            S_FETCH_J        : next_state = S_CHOICE_COMPUTE; // écriture de cluster[i]
-            S_CHOICE_COMPUTE : next_state = (valid_cluster == 1'b0) ? S_COMPUTE : (cnt_j == NB_POINTS-1) ? S_FETCH_I : S_FETCH_J;// ici, cluster est cluster_j
+            S_FETCH_WAIT     : next_state = (valid_cluster == 1'b0) ? S_WRITE_I : (cnt_i == NB_POINTS-1) ? S_DRAIN : S_FETCH_I; // valid_cluster here refers to point i
+            S_WRITE_I        : next_state = (cnt_i == NB_POINTS-1) ? S_DRAIN : S_FETCH_J;
+            S_FETCH_J        : next_state = S_CHOICE_COMPUTE;
+            S_CHOICE_COMPUTE : next_state = (valid_cluster == 1'b0) ? S_COMPUTE : (cnt_j == NB_POINTS-1) ? S_FETCH_I : S_FETCH_J;// valid_cluster here refers to point j
             S_COMPUTE        : next_state = (valid_out) ? S_WRITE : S_COMPUTE;
             S_WRITE          : next_state = (cnt_j != NB_POINTS - 1) ? S_FETCH_J : S_FETCH_I;
             S_DRAIN          : next_state = (drain_cnt == PIPE_DEPTH - 1) ? S_DONE : S_DRAIN;
@@ -164,18 +184,18 @@ module cluster_assign #(
  
 
     // -------------------------------------------------------------------
-    // Tags de decalage : independants de l'etat courant, calcules a partir
-    // de "quelle adresse a ete emise au cycle precedent"
+    // Shift-register tags: independent of the current FSM state, derived
+    // from which address was issued the previous cycle.
     // -------------------------------------------------------------------
-
     logic  j_compute_start;
     assign j_compute_start = (current_state == S_CHOICE_COMPUTE) && (valid_cluster == 1'b0);
 
 
-    logic              i_capture_d;   // 1 : le bus porte la donnee de i ce cycle
-    logic              j_valid_d;     // 1 : le bus porte une donnee j valide ce cycle
-    logic [ADDR_W-1:0] j_idx_d;       // index j correspondant a la donnee sur le bus
+    logic              i_capture_d;   // 1: the BRAM response this cycle is the i-fetch
+    logic              j_valid_d;     // 1: the BRAM response this cycle is a valid j-fetch
+    logic [ADDR_W-1:0] j_idx_d;       // j index matching the response on the bus
     logic [ADDR_W-1:0] i_idx_d;
+
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -192,7 +212,7 @@ module cluster_assign #(
     end
 
     // -------------------------------------------------------------------
-    // Capture de coord_X_i / coord_Y_i (independante de l'avancee du pipeline)
+    // Latch coord_X_i / coord_Y_i (independent of the pipeline's own advancement)
     // -------------------------------------------------------------------
     logic [COORD_W-1:0] coord_X_i, coord_Y_i;
 
@@ -204,19 +224,21 @@ module cluster_assign #(
     end
 
 
+
     // -------------------------------------------------------------------
-    // Pipeline de calcul
+    // Distance pipeline (3 stages). Same dx/dy -> squares -> sum pattern as
+    // dist_mat_arg_exp (see docs/blocks/exp_block.md section 4).
     // -------------------------------------------------------------------
     logic signed [COORD_W:0] dx, dy;
     logic [ADDR_W-1:0]       i_1, j_1;
     logic                    valid_1;
  
-    // Etage 1 -> 2 : carres
+    // Etage 1 -> 2 : squares
     logic [2*COORD_W-1:0] x_2, y_2;
     logic [ADDR_W-1:0]    i_2, j_2;
     logic                 valid_2;
 
-    // Etage 2 -> 3 : D2 = x2 + y2
+    // Stage 2 -> 3: dist_sq = x2 + y2
     logic [2*COORD_W:0] dist_sq;
     logic [ADDR_W-1:0]  i_3, j_3;
     logic               valid_3;
@@ -224,9 +246,11 @@ module cluster_assign #(
     logic [ADDR_W-1:0]  out_i, out_j;
     logic [ADDR_W-1:0] cluster_out_j;
 
-    // maintnenant on ne détecte plus un cluster non initialisé comme étant à -1 mais avec son bit de valid
-    // ce qui signifie que l'on ne doit pas réécrire -1 pour un cluster non initalisé car son bit de valid
-    // est déjà à 1
+
+    // Unassigned points are now identified by their valid bit rather than a
+    // -1 sentinel (see ADR-0006), so there is no need to ever write a
+    // placeholder value for an unassigned cluster field -- only actual
+    // assignments are written.
     logic hit_j;
 
     always_ff @(posedge clk or negedge rst_n) begin
@@ -238,30 +262,27 @@ module cluster_assign #(
             hit_j     <= 1'b0;
         end else begin
                         
-            // etage 0 -> sortie : delta = coord_i - coord_j;
+            // Stage 0 -> output: delta = coord_i - coord_j
             dx <= $signed({1'b0,coord_X_i}) - $signed({1'b0,coord_X});
             dy <= $signed({1'b0,coord_Y_i}) - $signed({1'b0,coord_Y});
             i_1     <= cnt_i;
             j_1     <= j_idx_d;
             valid_1 <= j_valid_d;
             
-
-            // etage 1 -> sortie : carré
+            // Stage 1 -> output: squares
             x_2     <= dx * dx;
             y_2     <= dy * dy;
             i_2     <= i_1;
             j_2     <= j_1;
             valid_2 <= valid_1;
             
-            
-            // etage 2 -> sortie : dist_sq au carré
+            // Stage 2 -> output: squared distance
             dist_sq    <= x_2 + y_2;
             i_3     <= i_2;
             j_3     <= j_2;
             valid_3 <= valid_2;
-            
-
-            // etage 3 -> sortie : comparaison
+        
+            // Stage 3 -> output: threshold comparison
             hit_j         <= (dist_sq <= TOL);
             cluster_out_j <= num_cluster;
             out_i         <= i_3;
@@ -271,6 +292,10 @@ module cluster_assign #(
         end
     end
 
+ 
+    // NOTE: driven directly from the pipeline result (valid_out/hit_j), not
+    // gated by current_state == S_WRITE -- see docs/blocks/cluster_assign.md
+    // section 4 for the resulting write-timing subtlety.
     assign we_cluster = (valid_out && hit_j) || (current_state == S_WRITE_I);
 
     assign cluster_out = (current_state == S_WRITE_I) ? cluster_out_i : cluster_out_j;
