@@ -1,8 +1,14 @@
 
-// mémoire macro
+//=============================================================================
+// Module: RAM_4096X32 (behavioral simulation model)
+//
+// NOTE: RAM_4096X32 as instantiated here is a behavioral simulation model
+// used to verify this wrapper's logic.
+//=============================================================================
+
 module RAM_4096X32 #(
-    parameter int ADDR_W = 12,   // largeur de l'adresse
-    parameter int DATA_W = 32
+    parameter int ADDR_W = 12, // Address width
+    parameter int DATA_W = 32  // Width of a single coordinate (X or Y)
 	)(
     input  logic              CLK,
     input  logic              CEN, // Chip Enable (active low)
