@@ -1,6 +1,12 @@
-// mémoire macro
+//=============================================================================
+// Module: RAM2P_1024X32 (behavioral simulation model)
+//
+// NOTE: RAM2P_1024X32 as instantiated here is a behavioral simulation model
+// used to verify this wrapper's logic.
+//=============================================================================
+
 module RAM2P_1024X32 #(
-    parameter int ADDR_W = 10,   // largeur de l'adresse
+    parameter int ADDR_W = 10,      // Address width
     parameter int DATA_W = 32
 	)(
     input  logic              CLKA,

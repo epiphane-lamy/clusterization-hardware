@@ -1,5 +1,14 @@
-
-// mémoire avec macro pour simu rtl
+//=============================================================================
+// Module: memory_single_port (ASIC macro-backed wrapper, P_ij storage)
+//
+// Backs the same interface as the behavioral P_ij memory
+// (rtl/memory_single_port.sv) using the RAM2P_1024X32 ASIC
+// memory macro (only port A is used). Packs two consecutive P_ij values
+// (an even/odd address pair) into a single 32-bit macro word, exploiting
+// the fact that P_ij is always produced in strictly increasing address
+// order (see docs/blocks/pij_mem_wrapper.md section 2 for the write-side
+// pairing scheme).
+//=============================================================================
 
 module memory_single_port #(
     parameter int ADDR_W = 10,   // largeur de l'adresse

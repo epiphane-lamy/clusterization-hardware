@@ -1,7 +1,18 @@
-// mémoire custom pour simu rtl
+//=============================================================================
+// Module: memory_single_port (behavioral model)
+//
+// Simulation implementation of the P_ij row storage memory: plain
+// single-port RAM, unconditional synchronous read, write gated by we.
+//
+// Shares its name and port list with the ASIC macro-backed wrapper
+// (synth_files/memory_single_port_synth.sv) so that switching targets requires
+// no change anywhere else in the design. See docs/blocks/pij_mem_wrapper.md
+// for the full comparison.
+//=============================================================================
+
 module memory_single_port #(
-    parameter int ADDR_W = 7,   // largeur de l'adresse
-    parameter int DATA_W = 8
+    parameter int ADDR_W = 7, // Address width
+    parameter int DATA_W = 8  // Data width (P_ij value)
 	)(
     // General
     input  logic       clk,
@@ -15,7 +26,6 @@ module memory_single_port #(
     output logic [DATA_W - 1:0] data_out
 );
 
-    // structure du memory 8 voies à 2 index
     logic [DATA_W - 1:0] memory [0:2**ADDR_W - 1];
 
 

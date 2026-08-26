@@ -1,5 +1,13 @@
+//=============================================================================
+// Module: RAM2P_1024X32 (macro model)
+//
+// NOTE: RAM2P_1024X32 as instantiated here is an opaque black box, actually
+// used in synthesis / place-and-route and characterized by its .lib and .lef
+// views, not this Verilog.
+//=============================================================================
+
 module RAM2P_1024X32 #(
-    parameter int ADDR_W = 10,   // largeur de l'adresse
+    parameter int ADDR_W = 10,      // Logical address width
     parameter int DATA_W = 32
 	)(
     input  logic              CLKA,
