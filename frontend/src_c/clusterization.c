@@ -9,7 +9,7 @@
 #define LUT_SIZE 10241
 
 #define TB_FILE "../tb/clusterization_tb.sv"
-#define BENCHMARK_FILE "../data/cluster1.txt"
+#define BENCHMARK_FILE "../data/cluster.txt"
 #define SCRIPT_FILE "../scripts/plot_benchmark.sh"
 
 void update_plot_script(void)

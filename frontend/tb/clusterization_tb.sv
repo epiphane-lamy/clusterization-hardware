@@ -1,7 +1,7 @@
 
 
 module clusterization_tb #(
-    parameter int NB_POINTS    = 1100,        // Number of points
+    parameter int NB_POINTS    = 1250,        // Number of points
     parameter int NB_ITER      = 50,          // nombre d'itérations
     parameter int COORD_W      = 16,          // largeur des coordonnees
     parameter int ADDR_W       = 12,          // largeur des adresses points Xf
