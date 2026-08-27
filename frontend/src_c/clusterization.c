@@ -10,8 +10,69 @@
 
 #define TB_FILE "../tb/clusterization_tb.sv"
 #define BENCHMARK_FILE "../data/cluster1.txt"
+#define SCRIPT_FILE "../scripts/plot_benchmark.sh"
 
+void update_plot_script(void)
+{
+    FILE *input = fopen(SCRIPT_FILE, "r");
+    if (input == NULL) {
+        perror("Erreur ouverture script");
+        return;
+    }
+
+    FILE *output = fopen("../scripts/plot_benchmark.tmp", "w");
+    if (output == NULL) {
+        perror("Erreur création fichier temporaire");
+        fclose(input);
+        return;
+    }
+
+    char line[2048];
+    int found = 0;
+
+    while (fgets(line, sizeof(line), input)) {
+
+        // Cherche une ligne qui commence par BENCHMARK_FILE=
+        if (strncmp(line, "BENCHMARK_FILE=", strlen("BENCHMARK_FILE=")) == 0) {
+
+            // Remplace toute la ligne
+            fprintf(output, "BENCHMARK_FILE=\"%s\"\n", BENCHMARK_FILE);
+
+            found = 1;
+        }
+        else {
+            // Copie les autres lignes sans modification
+            fputs(line, output);
+        }
+    }
+
+    fclose(input);
+    fclose(output);
+
+    if (!found) {
+        printf("Attention : BENCHMARK_FILE= non trouve dans %s\n",
+               SCRIPT_FILE);
+
+        remove("../scripts/plot_benchmark.tmp");
+        return;
+    }
+
+    // Remplace l'ancien script
+    if (remove(SCRIPT_FILE) != 0) {
+        perror("Erreur suppression ancien script");
+        remove("../scripts/plot_benchmark.tmp");
+        return;
+    }
+
+    if (rename("../scripts/plot_benchmark.tmp", SCRIPT_FILE) != 0) {
+        perror("Erreur renommage script");
+        return;
+    }
+
+    printf("BENCHMARK_FILE mis a jour : %s\n", BENCHMARK_FILE);
+}
 int main() {
+    update_plot_script();
     uint16_t exp_lut[LUT_SIZE];
 
     //FILE *f_exp_LUT = fopen("../data/exp_lut.hex","w");

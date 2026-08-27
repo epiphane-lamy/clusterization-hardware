@@ -1,3 +1,5 @@
+// This code was created by Elias de Almeida Ramos in order to do a 2D point clustering in software
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
