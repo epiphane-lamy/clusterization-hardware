@@ -1,4 +1,6 @@
 #!/bin/bash
+# Script to display the hardware clustering results obtained from the C code using the quantized fixed-point
+# chain (clusters_fixed_c)
 
 gnuplot << 'EOF'
 set terminal svg size 900,900 enhanced

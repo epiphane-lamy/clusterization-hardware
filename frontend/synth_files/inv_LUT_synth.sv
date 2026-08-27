@@ -1,3 +1,24 @@
+//=============================================================================
+// Module: inv_LUT (synthesis / ASIC flow)
+//
+// Lookup table for 1/x, used to complete row normalization (P_ij_norm =
+// (P_ij * inv[mantissa]) >> msb, see docs/blocks/grad_block.md section 5).
+// Unlike exp_LUT, addressing here is by the MANTISSA of the row sum
+// (top INDEX_W bits after MSB-aligning it), not by the sum's raw value --
+// this is what lets a fixed 1024-entry table cover the sum's wide dynamic
+// range (see ADR-0004). Content is generated in software from the same
+// reference model referenced in ARCHITECTURE.md section 8.
+//
+// This is the SYNTHESIS version, used for the ASIC flow. The LUT contents
+// are described explicitly using a case statement instead of $readmemh,
+// allowing the synthesis tool to infer the corresponding combinational
+// logic.
+//
+// The behavioral counterpart (same interface, same content, but loaded
+// through $readmemh for RTL simulation) lives under frontend/rtl/inv_LUT.sv
+// and is used for functional RTL simulation.
+//=============================================================================
+
 module inv_LUT #(
     parameter INDEX_W = 10
 )(

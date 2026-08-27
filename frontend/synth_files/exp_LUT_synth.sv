@@ -1,3 +1,20 @@
+//=============================================================================
+// Module: exp_LUT (synthesis / ASIC flow)
+//
+// Lookup table for exp(x), used to compute the P_ij coefficient, see
+// docs/blocks/exp_block.md section 5). The address is derived directly from
+// the argument's raw value. Content is generated in software from the same
+// reference model referenced in ARCHITECTURE.md section 8.
+//
+// This is the SYNTHESIS version, used for the ASIC flow. The LUT contents
+// are described explicitly using a case statement, allowing the synthesis
+// tool to infer the corresponding combinational logic.
+//
+// The behavioral counterpart (same interface, same content, but loaded
+// through $readmemh for RTL simulation) lives under frontend/rtl/exp_LUT.sv
+// and is used for functional RTL simulation.
+//=============================================================================
+
 module exp_LUT #(
     parameter INDEX_W = 14
 )(

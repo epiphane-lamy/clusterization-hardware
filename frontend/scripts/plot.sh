@@ -1,4 +1,5 @@
 #!/bin/bash
+# Script to display the hardware clustering results obtained via RTL simulation (clusters_fixed)
 
 gnuplot << 'EOF'
 set terminal svg size 900,900 enhanced

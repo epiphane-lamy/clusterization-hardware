@@ -1,5 +1,9 @@
+// =====================================
+// Filelist used for RTL simulation
+// with custom memory models that are
+// fully described in RTL and used for simulation.
+// =====================================
 rtl/clusterization_pkg.sv
-rtl/clusterization.sv
 
 rtl/memory_single_port.sv
 
@@ -15,7 +19,6 @@ rtl/inv_LUT.sv
 rtl/dist_mat_arg_exp.sv
 rtl/exp_LUT.sv
 
-tb/clusterization_tb.sv
 tb/full_step_cluster_tb.sv
 tb/full_step_tb.sv
 tb/step_tb.sv

@@ -1,3 +1,5 @@
+// Package clusterization
+
 package clusterization_pkg;
 
     parameter int NB_POINTS = 1250;

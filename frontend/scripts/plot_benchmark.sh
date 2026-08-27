@@ -1,4 +1,5 @@
 #!/bin/bash
+# Script to display the benchmark used for clustering (clusters_black) and the expected clustering result (clusters_colored)
 
 gnuplot << 'EOF'
 set terminal svg size 900,900 enhanced
