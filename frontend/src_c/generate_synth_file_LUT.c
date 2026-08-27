@@ -9,8 +9,8 @@
  * ============================================================ */
 int generate_exp_lut(void)
 {
-    FILE *fin  = fopen("exp_lut.hex", "r");
-    FILE *fout = fopen("exp_LUT_synth.sv", "w");
+    FILE *fin  = fopen("../data/exp_lut.hex", "r");
+    FILE *fout = fopen("../synth_files/exp_LUT_synth.sv", "w");
 
     if (fin == NULL) {
         perror("Erreur ouverture exp_lut.hex");
@@ -96,8 +96,8 @@ int generate_exp_lut(void)
  * ============================================================ */
 int generate_inv_lut(void)
 {
-    FILE *fin  = fopen("inv_lut.hex", "r");
-    FILE *fout = fopen("inv_LUT_synth.sv", "w");
+    FILE *fin  = fopen("../data/inv_lut.hex", "r");
+    FILE *fout = fopen("../synth_files/inv_LUT_synth.sv", "w");
 
     if (fin == NULL) {
         perror("Erreur ouverture inv_lut.hex");

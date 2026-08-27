@@ -1,18 +1,18 @@
 
 
 module clusterization_tb #(
-    parameter int NB_POINTS    = 1250, // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int NB_ITER      = 50,                            // nombre d'itérations
-    parameter int COORD_W      = 16,                            // largeur des coordonnees
-    parameter int ADDR_W       = 12,             // largeur des adresses points Xf
-    parameter int P_IJ_W       = 16,                            // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS),             // largeur des adresses P_ij
-    parameter int ADDR_LUT_INV = 10,                            // largeur des adresses LUT exp
-    parameter int ADDR_LUT_EXP = 14,                            // largeur des adresses LUT exp
-    parameter int ACT_W        = 16,                            // largeur des valeurs d'actualisation, fixed-point SIGNE
-    parameter int STEP_W       = 6,                             // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
-    parameter int K_W          = 16,                            // largeur de la constante K_step precalculee (signee, negative)
-    parameter int SQ_W         = 2 * COORD_W,                   // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
+    parameter int NB_POINTS    = 1250,        // Number of points
+    parameter int NB_ITER      = 50,          // nombre d'itérations
+    parameter int COORD_W      = 16,          // largeur des coordonnees
+    parameter int ADDR_W       = 12,          // largeur des adresses points Xf
+    parameter int P_IJ_W       = 16,          // largeur des P_ij, fixed-point SIGNE
+    parameter int ADDR_P_IJ_W  = 12,          // largeur des adresses P_ij
+    parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
+    parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
+    parameter int ACT_W        = 16,          // largeur des valeurs d'actualisation, fixed-point SIGNE
+    parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
+    parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
+    parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
     parameter int D2_W         = SQ_W + 1,                      // D2 = x2 + y2
     parameter int TOL          = 422144877                      // cst TOL
 	);

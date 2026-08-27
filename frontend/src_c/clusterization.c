@@ -3,10 +3,12 @@
 #include <math.h>
 #include <time.h>
 #include <stdint.h>
+#include <string.h>
 
 #define INITIAL_CAPACITY 2000
-
 #define LUT_SIZE 10241
+
+#define TB_FILE "../tb/clusterization_tb.sv"
 
 
 int main() {
@@ -85,6 +87,49 @@ int main() {
         n_total++;
     }
     fclose(file);
+
+
+
+
+    FILE *in = fopen(TB_FILE, "r");
+    if (!in) {
+        perror("Impossible d'ouvrir le testbench");
+        return 1;
+    }
+
+    FILE *out = fopen("../tb/clusterization_tb.tmp", "w");
+    if (!out) {
+        perror("Impossible de créer le fichier temporaire");
+        fclose(in);
+        return 1;
+    }
+
+    char line[1024];
+
+    while (fgets(line, sizeof(line), in)) {
+        if (strstr(line, "parameter int NB_POINTS")) {
+            fprintf(out, "    parameter int NB_POINTS    = %d,        // Number of points\n", n_total);
+        } else {
+            fputs(line, out);
+        }
+    }
+
+    fclose(in);
+    fclose(out);
+
+    if (remove(TB_FILE) != 0) {
+        perror("Impossible de supprimer l'ancien testbench");
+        return 1;
+    }
+
+    if (rename("../tb/clusterization_tb.tmp", TB_FILE) != 0) {
+        perror("Impossible de renommer le fichier temporaire");
+        return 1;
+    }
+
+    printf("TB mis a jour : NB_POINTS = %d\n", n_total);
+
+
 
 
     printf("/////////// N_total = %d\n", n_total);
