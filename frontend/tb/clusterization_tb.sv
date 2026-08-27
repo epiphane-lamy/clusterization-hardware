@@ -14,7 +14,7 @@ module clusterization_tb #(
     parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
     parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
     parameter int D2_W         = SQ_W + 1,                      // D2 = x2 + y2
-    parameter int TOL          = 422144877                      // cst TOL
+    parameter int TOL          = 170459136                      // cst TOL
 	);
 
     logic               clk;

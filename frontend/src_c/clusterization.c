@@ -88,7 +88,35 @@ int main() {
     }
     fclose(file);
 
+    // ================================================================
+    // Normalisation 
+    float x_min = X[0], x_max = X[0];
+    float y_min = Y[0], y_max = Y[0];
 
+    for (int i = 1; i < n_total; i++) {
+        if (X[i] < x_min) x_min = X[i];
+        if (X[i] > x_max) x_max = X[i];
+
+        if (Y[i] < y_min) y_min = Y[i];
+        if (Y[i] > y_max) y_max = Y[i];
+    }
+
+    float center_x = (x_min + x_max) * 0.5f;
+    float center_y = (y_min + x_max) * 0.5f;
+
+    float rangex = x_max - x_min;
+    float rangey = y_max - y_min;
+
+    float range_n = (rangex > rangey) ? rangex : rangey;
+
+    float norm_scale = 2.0f / range_n;
+
+    for (int i = 0; i < n_total; i++) {
+        X[i] = (X[i] - center_x) * norm_scale;
+        Y[i] = (Y[i] - center_y) * norm_scale;
+    }
+
+    // ================================================================
 
 
     FILE *in = fopen(TB_FILE, "r");
@@ -641,11 +669,12 @@ int main() {
     int num_clusters_float = 0;
     int num_clusters_fixed = 0;
     // Tolerância adaptada para varrer o mapa físico preservando os lóbulos independentes
-    double tol = 1.25 * 1.25;
+    double tol = 0.4 * 0.4;
 
     //uint32_t tol_fixed = (uint32_t)(tol * scale_points * scale_points * 65536.0);
     double scale_coord = (double)scale_points * 256.0;
     uint64_t tol_fixed = (uint64_t)(tol * scale_coord * scale_coord);
+    printf("tol_fixed = %d\n", tol_fixed);
 
     for (int i = 0; i < n_total; i++) {
         if (cluster_labels[i] != -1) continue;
