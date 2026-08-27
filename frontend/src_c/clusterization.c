@@ -9,10 +9,9 @@
 #define LUT_SIZE 10241
 
 #define TB_FILE "../tb/clusterization_tb.sv"
-
+#define BENCHMARK_FILE "../data/cluster1.txt"
 
 int main() {
-
     uint16_t exp_lut[LUT_SIZE];
 
     //FILE *f_exp_LUT = fopen("../data/exp_lut.hex","w");
@@ -63,7 +62,7 @@ int main() {
     // --- 1. DATA INGESTION (X, Y) ---
     printf("--- L.E.G.I.A.O. V3 [2D MODE]: PROCESSING PLANAR MAP ---\n");
 
-    FILE *file = fopen("../data/cluster.txt", "r");
+    FILE *file = fopen(BENCHMARK_FILE, "r");
     if (file == NULL) {
         printf("Error while opening the file cluster.txt\n");
         return 1;
@@ -235,7 +234,7 @@ int main() {
         return 1;
     }
 
-    fprintf(f_fixed, "%f %f %f\n", scale_points, xmin, ymin);
+    fprintf(f_fixed, "%f %f %f %f %f %f\n", scale_points, xmin, ymin, norm_scale, center_x, center_y);
     for (int i = 0; i < n_total; i++) {
         fprintf(f_fixed, "%d %d\n", X_f[i], Y_f[i]);
     }
@@ -716,7 +715,7 @@ int main() {
         num_clusters_fixed++;
     }
 
-    FILE *file_in = fopen("../data/cluster.txt", "r");
+    FILE *file_in = fopen(BENCHMARK_FILE, "r");
     FILE *file_out = fopen("../data/resultats_c.txt", "w");
     double val3_old;
     int i = 0;

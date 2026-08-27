@@ -1,7 +1,7 @@
 
 
 module clusterization_tb #(
-    parameter int NB_POINTS    = 1250,        // Number of points
+    parameter int NB_POINTS    = 1100,        // Number of points
     parameter int NB_ITER      = 50,          // nombre d'itérations
     parameter int COORD_W      = 16,          // largeur des coordonnees
     parameter int ADDR_W       = 12,          // largeur des adresses points Xf
@@ -195,6 +195,7 @@ module clusterization_tb #(
     int xf, yf;
     real xf_real, yf_real;
     real scale, xmin, ymin;
+    real norm_scale, center_x, center_y;
     int addr_file;
     int addr_mem_coord;
     initial begin
@@ -229,7 +230,7 @@ module clusterization_tb #(
         end
 
         // on jette l'entete
-        ret = $fscanf(fd, "%f %f %f", scale, xmin, ymin);
+        ret = $fscanf(fd, "%f %f %f %f %f %f", scale, xmin, ymin, norm_scale, center_x, center_y);
         addr_file = 0;
 
         while (addr_file < NB_POINTS) begin
@@ -290,9 +291,9 @@ module clusterization_tb #(
         end
 
 
-        ret = $fscanf(fd, "%f %f %f", scale, xmin, ymin);
+        ret = $fscanf(fd, "%f %f %f %f %f %f", scale, xmin, ymin, norm_scale, center_x, center_y);
 
-        if (ret != 3) begin
+        if (ret != 6) begin
             $fatal(1, "Erreur lecture en-tête : scale/xmin/ymin");
         end
 
@@ -306,8 +307,8 @@ module clusterization_tb #(
             if (ret != 2)
                 break;
 
-            xf_real = (xf / 256.0) / scale + xmin;
-            yf_real = (yf / 256.0) / scale + ymin;
+            xf_real = ((xf / 256.0) / scale + xmin) / norm_scale + center_x;
+            yf_real = ((yf / 256.0) / scale + ymin) / norm_scale + center_y;
             $fwrite(fd_cluster, "%f %f ", xf_real, yf_real);
 
             //save_memory_cluster(addr_file);
