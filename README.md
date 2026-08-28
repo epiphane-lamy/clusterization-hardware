@@ -56,7 +56,7 @@ Taken through a full RTL → GDSII flow in Cadence Innovus, using two real memor
 
 To run the full software-to-hardware comparison on your own 2D point benchmark:
 
-1. **Add your benchmark.** Create a plain-text file with no header, one point per line: `x`, `y`, and a cluster-number column (the latter unused by the pipeline itself, kept for reference), and place it under `frontend/data/`.
+1. **Add your benchmark.** Create a plain-text file with no header, containing at most 2048 points, one point per line: `x`, `y`, and a cluster-number column (the latter unused by the pipeline itself, kept for reference), and place it under `frontend/data/`.
 2. **Point the reference model at it.** In `clusterization.c`, edit the benchmark path near the top of the file:
    ```c
    #define BENCHMARK_FILE "../data/cluster.txt"
@@ -92,15 +92,15 @@ To run the full software-to-hardware comparison on your own 2D point benchmark:
 │       ├── FLOW.md             # Innovus floorplanning / P&R methodology
 │       └── RESULTS.md          # area / timing / power results
 ├── frontend/
-│   ├── data                    # 
+│   ├── data/                   # Input data, benchmarks, and LUT initialization files
 │   ├── results_clustering/     # generated plots
-│   ├── rtl                     # 
+│   ├── rtl/                    # Main RTL design sources
 │   ├── scripts/                # plotting scripts (plot_fixed_c.sh, plot_fixed.sh, ...)
-│   ├── src_c                   # 
+│   ├── src_c/                  # C reference and data-processing sources
 │   ├── synth_files/            # synthesizable RTL (macro wrappers, case-statement LUTs)
-│   ├── tb                      # 
-│   ├── filelist.f/             # 
-│   └── filelist_bb.f/          # 
+│   ├── tb/                     # RTL simulation testbenches
+│   ├── filelist.f              # RTL simulation filelist using custom memory models
+│   └── filelist_bb.f           # RTL simulation filelist using behavioral models for synthesis black boxes
 └── backend/
     └── layout/                 # Innovus deliverables and reports (synthesis, P&R, STA, power)
 ```
@@ -112,3 +112,7 @@ RTL for all compute blocks and memory wrappers is written, commented, and indivi
 ## Acknowledgments
 
 The clustering algorithm implemented here in hardware was designed by **Elias De Almeida Ramos**, a mathematician colleague at GMicro (Grupo de Microeletrônica, Universidade Federal de Santa Maria, Brazil), who provided the original C reference implementation this project is based on. A paper describing the algorithm is in preparation for IEEE, with a planned submission to ISCAS 2027 (Bordeaux, France).
+
+The project was carried out within GMicro (Grupo de Microeletrônica) at the Federal University of Santa Maria (UFSM), Brazil, which also hosts the Santa Maria Design House (SMDH), a structure dedicated to the design of integrated circuits for aerospace, defense, and communications applications. The laboratory is part of the Brazilian federal CI-Brasil program, which aims to contribute to the development of a national semiconductor industry.
+
+Professor **João Baptista dos Santos Martins** is acknowledged as the head of the laboratory and the supervisor of this internship.
