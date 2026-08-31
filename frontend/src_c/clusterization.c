@@ -162,7 +162,7 @@ int main() {
     }
 
     float center_x = (x_min + x_max) * 0.5f;
-    float center_y = (y_min + x_max) * 0.5f;
+    float center_y = (y_min + y_max) * 0.5f;
 
     float rangex = x_max - x_min;
     float rangey = y_max - y_min;
@@ -777,17 +777,20 @@ int main() {
     }
 
     FILE *file_in = fopen(BENCHMARK_FILE, "r");
-    FILE *file_out = fopen("../data/resultats_c.txt", "w");
+    FILE *file_out_software = fopen("../data/resultats_c.txt", "w");
+    FILE *file_out_software_float = fopen("../data/resultats_c_float.txt", "w");
     double val3_old;
     int i = 0;
     // Lecture ligne par ligne des 3 valeurs et remplacement de la 3ème
     while (fscanf(file_in, "%lf %lf %lf", &val1, &val2, &val3_old) == 3) {
-        fprintf(file_out, "%.14f %.14f %d\n", val1, val2, cluster_labels_fixed[i]);
+        fprintf(file_out_software, "%.14f %.14f %d\n", val1, val2, cluster_labels_fixed[i]);
+        fprintf(file_out_software_float, "%.14f %.14f %d\n", val1, val2, cluster_labels[i]);
         i++;
     }
 
     fclose(file_in);
-    fclose(file_out);
+    fclose(file_out_software);
+    fclose(file_out_software_float);
 
     
     for (int i = 0; i < n_total; i++) {
