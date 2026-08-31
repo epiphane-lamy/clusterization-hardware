@@ -45,20 +45,12 @@ module clusterization #(
     input logic start, // Launches the clustering pipeline
  
     // --- Point BRAM load port (Xf / Yf) -- external write access for testbenches ---
-    input logic control_mem_coord_load_b1, // 1: give the b1 memory port to the external loader below instead of exp
+    input logic control_mem_coord_load, // 1: give the coordinate memory port to the external loader below
  
-    input logic               we_coord_load_b1,
-    input logic [ADDR_W-1:0]  addr_coord_load_b1,
-    input logic [COORD_W-1:0] data_in1_coord_load_b1,
-    input logic [COORD_W-1:0] data_in2_coord_load_b1,
- 
-    input logic control_mem_coord_load_b2, // Same as above, for the b2 (grad-side) memory
- 
-    input logic               we_coord_load_b2,
-    input logic [ADDR_W-1:0]  addr_coord_load_b2,
-    input logic [COORD_W-1:0] data_in1_coord_load_b2,
-    input logic [COORD_W-1:0] data_in2_coord_load_b2,
- 
+    input logic               we_coord_load,
+    input logic [ADDR_W-1:0]  addr_coord_load,
+    input logic [COORD_W-1:0] data_in1_coord_load,
+    input logic [COORD_W-1:0] data_in2_coord_load,
  
     // --- Cluster BRAM read port -- external readout access for testbenches ---
     input logic control_mem_cluster_read, // 1: give the cluster memory's address port to the external reader below
@@ -642,16 +634,16 @@ module clusterization #(
     // and exp's own compute reads by default otherwise.
     // -------------------------------------------------------------------
     always_comb begin
-        if (!control_mem_coord_load_b1) owner_b1 = OWNER_TB;
+        if (!control_mem_coord_load) owner_b1 = OWNER_TB;
         else if (control_mem_b3)        owner_b1 = OWNER_ACT;
         else if (all_steps_done)        owner_b1 = OWNER_CLUSTER_ASSIGN;
         else                            owner_b1 = OWNER_COMPUTE;
     end
 
-    assign port_coord_b1_load.we       = we_coord_load_b1;
-    assign port_coord_b1_load.addr     = addr_coord_load_b1;
-    assign port_coord_b1_load.data_in1 = data_in1_coord_load_b1;
-    assign port_coord_b1_load.data_in2 = data_in2_coord_load_b1;
+    assign port_coord_b1_load.we       = we_coord_load;
+    assign port_coord_b1_load.addr     = addr_coord_load;
+    assign port_coord_b1_load.data_in1 = data_in1_coord_load;
+    assign port_coord_b1_load.data_in2 = data_in2_coord_load;
 
     assign port_compute_b1.we          = 1'b0; // exp block only reads
     assign port_compute_b1.addr        = addr_coord_compute_b1;
@@ -682,16 +674,16 @@ module clusterization #(
     // instantiation above), so there is no OWNER_CLUSTER_ASSIGN branch here.
     // -------------------------------------------------------------------
     always_comb begin
-        if (!control_mem_coord_load_b2) owner_b2 = OWNER_TB;
+        if (!control_mem_coord_load) owner_b2 = OWNER_TB;
         else if (control_mem_b3)        owner_b2 = OWNER_ACT;
         else                            owner_b2 = OWNER_COMPUTE;
     end
 
 
-    assign port_coord_b2_load.we       = we_coord_load_b2;
-    assign port_coord_b2_load.addr     = addr_coord_load_b2;
-    assign port_coord_b2_load.data_in1 = data_in1_coord_load_b2;
-    assign port_coord_b2_load.data_in2 = data_in2_coord_load_b2;
+    assign port_coord_b2_load.we       = we_coord_load;
+    assign port_coord_b2_load.addr     = addr_coord_load;
+    assign port_coord_b2_load.data_in1 = data_in1_coord_load;
+    assign port_coord_b2_load.data_in2 = data_in2_coord_load;
 
     assign port_compute_b2.we          = 1'b0; // grad block only reads
     assign port_compute_b2.addr        = addr_coord_compute_b2;

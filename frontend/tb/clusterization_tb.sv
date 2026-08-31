@@ -14,11 +14,11 @@
 //=============================================================================
 
 module clusterization_tb #(
-    parameter int NB_POINTS    = 1250,        // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
+    parameter int NB_POINTS    = 1250,        // Number of points
     parameter int NB_ITER      = 50,          // Number of iterations
     parameter int COORD_W      = 16,          // Coordinate width
     parameter int ADDR_W       = 12,          // Point address width
-    parameter int P_IJ_W       = 16,          // P_ij width, signed fixed-point
+    parameter int P_IJ_W       = 16,          // P_ij width, fixed-point
     parameter int ADDR_P_IJ_W  = 12,          // P_ij address width (same ADR-0007 note as ADDR_W above)
     parameter int ADDR_LUT_INV = 10,          // Inverse LUT address width
     parameter int ADDR_LUT_EXP = 14,          // exp LUT address width
@@ -34,17 +34,11 @@ module clusterization_tb #(
     logic               rst_n;
     logic               start;
 
-    logic               control_mem_coord_load_b1;
-    logic               we_coord_load_b1;
-    logic [ADDR_W-1:0]  addr_coord_load_b1;
-    logic [COORD_W-1:0] data_in1_coord_load_b1;
-    logic [COORD_W-1:0] data_in2_coord_load_b1;
-
-    logic               control_mem_coord_load_b2;
-    logic               we_coord_load_b2;
-    logic [ADDR_W-1:0]  addr_coord_load_b2;
-    logic [COORD_W-1:0] data_in1_coord_load_b2;
-    logic [COORD_W-1:0] data_in2_coord_load_b2;
+    logic               control_mem_coord_load;
+    logic               we_coord_load;
+    logic [ADDR_W-1:0]  addr_coord_load;
+    logic [COORD_W-1:0] data_in1_coord_load;
+    logic [COORD_W-1:0] data_in2_coord_load;
 
 
     logic [COORD_W-1:0] coord_X;
@@ -58,83 +52,56 @@ module clusterization_tb #(
 
 
     clusterization #(
-        .NB_POINTS                 (NB_POINTS),
-        .NB_ITER                   (NB_ITER),
-        .COORD_W                   (COORD_W),
-        .ADDR_W                    (ADDR_W),
-        .P_IJ_W                    (P_IJ_W),
-        .ADDR_P_IJ_W               (ADDR_P_IJ_W),
-        .ADDR_LUT_INV              (ADDR_LUT_INV),
-        .ADDR_LUT_EXP              (ADDR_LUT_EXP),
-        .ACT_W                     (ACT_W),
-        .STEP_W                    (STEP_W),
-        .K_W                       (K_W),
-        .SQ_W                      (SQ_W),
-        .D2_W                      (D2_W),
-        .TOL                       (TOL)
-    ) dut_clusterization (
-        .clk                       (clk),
-        .rst_n                     (rst_n),
-        .start                     (start),
+        .NB_POINTS                (NB_POINTS),
+        .NB_ITER                  (NB_ITER),
+        .COORD_W                  (COORD_W),
+        .ADDR_W                   (ADDR_W),
+        .P_IJ_W                   (P_IJ_W),
+        .ADDR_P_IJ_W              (ADDR_P_IJ_W),
+        .ADDR_LUT_INV             (ADDR_LUT_INV),
+        .ADDR_LUT_EXP             (ADDR_LUT_EXP),
+        .ACT_W                    (ACT_W),
+        .STEP_W                   (STEP_W),
+        .K_W                      (K_W),
+        .SQ_W                     (SQ_W),
+        .D2_W                     (D2_W),
+        .TOL                      (TOL)
+    ) clusterization (
+        .clk                      (clk),
+        .rst_n                    (rst_n),
+        .start                    (start),
 
-        .control_mem_coord_load_b1 (control_mem_coord_load_b1),
-        .we_coord_load_b1          (we_coord_load_b1),
-        .addr_coord_load_b1        (addr_coord_load_b1),
-        .data_in1_coord_load_b1    (data_in1_coord_load_b1),
-        .data_in2_coord_load_b1    (data_in2_coord_load_b1),
+        .control_mem_coord_load   (control_mem_coord_load),
+        .we_coord_load            (we_coord_load),
+        .addr_coord_load          (addr_coord_load),
+        .data_in1_coord_load      (data_in1_coord_load),
+        .data_in2_coord_load      (data_in2_coord_load),
 
-        .control_mem_coord_load_b2 (control_mem_coord_load_b2),
-        .we_coord_load_b2          (we_coord_load_b2),
-        .addr_coord_load_b2        (addr_coord_load_b2),
-        .data_in1_coord_load_b2    (data_in1_coord_load_b2),
-        .data_in2_coord_load_b2    (data_in2_coord_load_b2),
+        .control_mem_cluster_read (control_mem_cluster_read),
+        .addr_cluster_read        (addr_cluster_read),
+        .cluster_read             (cluster_read),
 
-        .control_mem_cluster_read  (control_mem_cluster_read),
-        .addr_cluster_read         (addr_cluster_read),
-        .cluster_read              (cluster_read),
-
-        .done                      (done)
+        .done                     (done)
     );
 
  
     // -------------------------------------------------------------------
-    // Tasks to write/read the exp-side (b1) and grad-side (b2) coordinate
-    // memories through the external testbench load port (see
-    // ARCHITECTURE.md section 9.2 for the ownership handoff these tasks
-    // rely on: control_mem_coord_load_bX = 0 grants the TB ownership for
-    // the duration of the access, and setting it back to 1 hands ownership
+    // Tasks to write both coordinate (exp block / grad block) memories
+    // through the external testbench load port (see ARCHITECTURE.md
+    // section 9.2 for the ownership handoff these tasks rely on:
+    // control_mem_coord_load = 0 grants the TB ownership for the
+    // duration of the access, and setting it back to 1 hands ownership
     // back to the DUT's normal owner priority chain).
     // -------------------------------------------------------------------
-    task write_memory_coord_b1(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
-        control_mem_coord_load_b1 = 0;
-        we_coord_load_b1          = 1;
-        addr_coord_load_b1        = addr_task;
-        data_in1_coord_load_b1    = data_in1_task;
-        data_in2_coord_load_b1    = data_in2_task;
+    task write_memory_coord(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
+        control_mem_coord_load = 0;
+        we_coord_load          = 1;
+        addr_coord_load        = addr_task;
+        data_in1_coord_load    = data_in1_task;
+        data_in2_coord_load    = data_in2_task;
         @(posedge clk);
-        we_coord_load_b1          = 0;
-        control_mem_coord_load_b1 = 1;
-    endtask
-    
-    task write_memory_coord_b2(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
-        control_mem_coord_load_b2 = 0;
-        we_coord_load_b2          = 1;
-        addr_coord_load_b2        = addr_task;
-        data_in1_coord_load_b2    = data_in1_task;
-        data_in2_coord_load_b2    = data_in2_task;
-        @(posedge clk);
-        we_coord_load_b2          = 0;
-        control_mem_coord_load_b2 = 1;
-    endtask
-
-    task read_memory_coord(input logic [ADDR_W-1:0] addr_task);
-        control_mem_coord_load_b1 = 0;
-        control_mem_coord_load_b2 = 0;
-        addr_coord_load_b1        = addr_task;
-        addr_coord_load_b2        = addr_task;
-        @(posedge clk);
-        control_mem_coord_load_b1 = 1;
-        control_mem_coord_load_b2 = 1;
+        we_coord_load          = 0;
+        control_mem_coord_load = 1;
     endtask
 
     task read_memory_cluster(input logic [ADDR_W-1:0] addr_task);
@@ -149,7 +116,6 @@ module clusterization_tb #(
     task save_memory_cluster(input logic [ADDR_W-1:0] addr_task);
         control_mem_cluster_read = 0;
         addr_cluster_read   = addr_task;
-
         @(posedge clk);
         $display("CLUSTER MEMORY READ cluster[%0d] = %0d",
         addr_cluster_read, cluster_read);
@@ -179,12 +145,9 @@ module clusterization_tb #(
         rst_n                     =  0;
         start                     =  0;
 
-        control_mem_coord_load_b1 =  0;
-        control_mem_coord_load_b2 =  0;
-        we_coord_load_b1          =  0;
-        we_coord_load_b2          =  0;
-        addr_coord_load_b1        = '0;
-        addr_coord_load_b2        = '0;
+        control_mem_coord_load =  0;
+        we_coord_load          =  0;
+        addr_coord_load        = '0;
 
         control_mem_cluster_read  =  1;
         addr_cluster_read         = '0;
@@ -220,8 +183,7 @@ module clusterization_tb #(
             if (ret != 2)
                 break;
 
-            write_memory_coord_b1(addr_file[ADDR_W-1:0], xf[15:0], yf[15:0]);
-            write_memory_coord_b2(addr_file[ADDR_W-1:0], xf[15:0], yf[15:0]);
+            write_memory_coord(addr_file[ADDR_W-1:0], xf[15:0], yf[15:0]);
 
             addr_file++;
         end
@@ -234,8 +196,7 @@ module clusterization_tb #(
         // Launch computation: hand coordinate-memory ownership back to the
         // DUT's normal priority chain (see ARCHITECTURE.md section 9.2),
         // then pulse start.
-        control_mem_coord_load_b1 = 1;
-        control_mem_coord_load_b2 = 1;
+        control_mem_coord_load = 1;
         start = 1;
         @(posedge clk);
         start = 0;
@@ -286,7 +247,7 @@ module clusterization_tb #(
             yf_real = ((yf / 256.0) / scale + ymin) / norm_scale + center_y;
             $fwrite(fd_cluster, "%f %f ", xf_real, yf_real);
 
-            $fdisplay(fd_cluster, "%0d", dut_clusterization.memory_cluster.u_ram.memory[addr_file]);
+            $fdisplay(fd_cluster, "%0d", clusterization.memory_cluster.u_ram.memory[addr_file]);
 
             addr_file++;
         end

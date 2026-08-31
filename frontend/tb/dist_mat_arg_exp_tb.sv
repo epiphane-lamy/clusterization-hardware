@@ -1,4 +1,12 @@
-
+//=============================================================================
+// Testbench: dist_mat_arg_exp_tb
+//
+// Testbench for the exp block: loads a small subset of the full benchmark
+// point set (produced by the fixed-point software reference model, see
+// docs/ARCHITECTURE.md section 8), runs the exp block to produce a row of
+// the P_ij matrix for comparison against the software reference.
+//
+//=============================================================================
 
 module dist_mat_arg_exp_tb #(
     parameter int NB_POINTS = 100,         // Number of points, Currently a fixed default

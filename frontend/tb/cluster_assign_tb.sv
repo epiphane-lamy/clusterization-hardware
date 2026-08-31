@@ -1,4 +1,11 @@
-
+//=============================================================================
+// Testbench: cluster_assign_tb
+//
+// Testbench for cluster_assign: loads a small subset of the full benchmark
+// point set (produced by the fixed-point software reference model, see
+// docs/ARCHITECTURE.md section 8), runs cluster_assign to assign each point
+// to a cluster.
+//=============================================================================
 
 module cluster_assign_tb #(
     parameter int NB_POINTS    = 100,      // Number of points, Currently a fixed default

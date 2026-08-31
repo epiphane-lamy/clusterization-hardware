@@ -35,8 +35,8 @@ module norm_entropy_grad #(
     parameter int NB_POINTS    = 8,   // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
     parameter int COORD_W      = 16,  // Coordinate width, signed fixed-point
     parameter int ADDR_W       = 7,   // Point address width (used for cnt_i / cnt_j / addr)
-    parameter int P_IJ_W       = 16,  // P_ij width, signed fixed-point
-    parameter int ADDR_P_IJ_W  = 7,   // P_ij / update address width
+    parameter int P_IJ_W       = 16,  // P_ij width fixed-point
+    parameter int ADDR_P_IJ_W  = 7,   // P_ij address width
     parameter int SUM_ROW_P_W  = 32,  // sum_row_P width
     parameter int ACT_W        = 32,  // Update value width (mult_act_X/Y), signed fixed-point
  

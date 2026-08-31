@@ -1,17 +1,27 @@
-
+//=============================================================================
+// Testbench: step_tb
+//
+// Full-system testbench for one complete step, processed through the exp,
+// grad, and ping-pong arbiter blocks: loads a small subset of the full
+// benchmark point set (produced by the fixed-point software reference model,
+// see docs/ARCHITECTURE.md section 8), runs the reduced pipeline, and writes
+// out the final coordinates after the first step for comparison against the
+// software reference.
+//
+//=============================================================================
 
 module step_tb #(
-    parameter int NB_POINTS = 100,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int COORD_W   = 16,          // largeur des coordonnees, fixed-point SIGNE
-    parameter int ADDR_W    = 7,           // largeur des adresses points Xf
-    parameter int P_IJ_W       = 16,       // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = 7,        // largeur des adresses P_ij
-    parameter int ADDR_LUT_INV = 10,       // largeur des adresses LUT exp
-    parameter int ADDR_LUT_EXP = 14,       // largeur des adresses LUT exp
-    parameter int STEP_W    = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
-    parameter int K_W       = 16,          // largeur de la constante K_step precalculee (signee, negative)
-    parameter int SQ_W      = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
-    parameter int D2_W      = SQ_W + 1     // D2 = x2 + y2
+    parameter int NB_POINTS    = 100,         // Number of points
+    parameter int COORD_W      = 16,          // Coordinate width
+    parameter int ADDR_W       = 7,           // Point address width
+    parameter int P_IJ_W       = 16,          // P_ij width, fixed-point
+    parameter int ADDR_P_IJ_W  = 7,           // P_ij address width (same ADR-0007 note as ADDR_W above)
+    parameter int ADDR_LUT_INV = 10,          // Inverse LUT address width
+    parameter int ADDR_LUT_EXP = 14,          // exp LUT address width
+    parameter int STEP_W       = 6,           // Iteration counter width (max_iter=50 -> 6 bits is enough)
+    parameter int K_W          = 16,          // Precomputed K_step constant width, signed, always negative
+    parameter int SQ_W         = 2 * COORD_W, // dx*dx / dy*dy: product of two signed COORD_W-bit values
+    parameter int D2_W         = SQ_W + 1     // D2 = x2 + y2
 	);
 
     logic       clk;
@@ -19,13 +29,12 @@ module step_tb #(
 
 
     // -------------------------------------------------------------------
-    // Déclaration bloc exp et annexes
+    // exp block and its dedicated coordinate memory / exp_LUT
     // -------------------------------------------------------------------
-    logic              start;     // lance le balayage complet d'un step
-    logic [STEP_W-1:0] step_idx;  // index de l'iteration courante
+    logic              start;     // Launches a full row sweep for exp (see step_idx generation further down)
+    logic [STEP_W-1:0] step_idx;  // Current iteration index
 
-    // --- Port BRAM point (adresse incrementee chaque cycle) ---
-    
+    // --- Point BRAM port (address advanced every cycle by exp) ---
     logic [ADDR_W-1:0] addr_coord_b1;
 
     logic              control_mem_coord_b1;
@@ -36,53 +45,52 @@ module step_tb #(
     logic [COORD_W-1:0] coord_Y_b1;
 
     logic signed [ADDR_LUT_EXP-1:0] index_LUT_exp;
-    logic signed [COORD_W-1:0] result_exp;
+    logic signed [COORD_W-1:0]      result_exp;
 
-	// --- Sortie vers le bloc exponentiel ---
-    logic [COORD_W-1:0] P_ij_b1;   // D2_ij * K_step
-    logic [ADDR_W-1:0]          out_i_b1;
-    logic [ADDR_W-1:0]          out_j_b1;
-    logic                       valid_out_b1;
+	// --- exp block outputs ---
+    logic [COORD_W-1:0] P_ij_b1;
+    logic [ADDR_W-1:0]  out_i_b1;
+    logic [ADDR_W-1:0]  out_j_b1;
+    logic               valid_out_b1;
 
     logic [31:0] sum_row_P;
     logic        valid_sum_row_P;
 
-
     logic credit_avail;
     logic done_b1;
 
-    // DUT bloc exp
+    // DUT exp block
     dist_mat_arg_exp #(
-        .NB_POINTS (NB_POINTS),
-        .COORD_W   (COORD_W),
-        .ADDR_W    (ADDR_W),
+        .NB_POINTS       (NB_POINTS),
+        .COORD_W         (COORD_W),
+        .ADDR_W          (ADDR_W),
         .ADDR_LUT_EXP    (ADDR_LUT_EXP),
-        .STEP_W    (STEP_W),
-        .K_W       (K_W)
-    ) bloc_exp (
-        .clk(clk),
-        .rst_n(rst_n),
+        .STEP_W          (STEP_W),
+        .K_W             (K_W)
+    ) exp_block (
+        .clk             (clk),
+        .rst_n           (rst_n),
 
-        .start(start),
-        .step_idx(step_idx),
+        .start           (start),
+        .step_idx        (step_idx),
 
-        .addr(addr_coord_compute_b1),
-        .coord_X(coord_X_b1),
-        .coord_Y(coord_Y_b1),
+        .addr            (addr_coord_compute_b1),
+        .coord_X         (coord_X_b1),
+        .coord_Y         (coord_Y_b1),
 
-        .index_LUT_exp(index_LUT_exp),
-        .result_exp(result_exp),
+        .index_LUT_exp   (index_LUT_exp),
+        .result_exp      (result_exp),
 
-        .P_ij(P_ij_b1),
-        .out_i(out_i_b1),
-        .out_j(out_j_b1),
-        .valid_out(valid_out_b1),
+        .P_ij            (P_ij_b1),
+        .out_i           (out_i_b1),
+        .out_j           (out_j_b1),
+        .valid_out       (valid_out_b1),
 
-        .sum_row_P(sum_row_P),
-        .valid_sum_row_P(valid_sum_row_P),
+        .sum_row_P       (sum_row_P),
+        .valid_sum_row_P (valid_sum_row_P),
 
-        .credit_avail(credit_avail),
-        .done(done_b1)
+        .credit_avail    (credit_avail),
+        .done            (done_b1)
     );
 
     // memory access
@@ -91,35 +99,35 @@ module step_tb #(
     logic [COORD_W-1:0] data_in2_b1;
     
 
-    // DUT memory coord points
+    // DUT: exp-side coordinate memory (see ADR-0003, duplicated coordinate memories)
     memory_dual_port #(
-        .ADDR_W (ADDR_W),
-        .DATA_W (COORD_W)
+        .ADDR_W    (ADDR_W),
+        .DATA_W    (COORD_W)
     ) memory_coord_b1 (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_coord_b1),
-        .addr(addr_coord_b1),
-        .data_in1(data_in1_b1),
-        .data_in2(data_in2_b1),
+        .we        (we_coord_b1),
+        .addr      (addr_coord_b1),
+        .data_in1  (data_in1_b1),
+        .data_in2  (data_in2_b1),
 
-        .data_out1(coord_X_b1),
-        .data_out2(coord_Y_b1)
+        .data_out1 (coord_X_b1),
+        .data_out2 (coord_Y_b1)
     );
 
-    // DUT exp_LUT
+    // DUT: exp_LUT
     exp_LUT exp_LUT (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk        (clk),
+        .rst_n      (rst_n),
 
-        .index(index_LUT_exp),
-        .result_exp(result_exp)
+        .index      (index_LUT_exp),
+        .result_exp (result_exp)
     );
 
 
     // -------------------------------------------------------------------
-    // Déclaration bloc grad et annexes
+    // grad block and its dedicated coordinate memory / inv_LUT
     // -------------------------------------------------------------------
     logic [ADDR_W-1:0]  addr_coord_b2;
     logic [COORD_W-1:0] coord_X_b2;
@@ -129,19 +137,17 @@ module step_tb #(
     logic [ADDR_W-1:0] addr_coord_tb_b2;
     logic [ADDR_W-1:0] addr_compute_coord_b2;
 
-
-    // --- Port BRAM P_ij ---
+    // --- P_ij read port (via the ping-pong arbiter) ---
     logic [ADDR_P_IJ_W-1:0]  addr_P_ij_b2;
     logic [P_IJ_W-1:0]      P_ij_b2;
 
-
-    // --- Port LUT inv (inv[index = mantissa]) ---
+    // --- Inverse LUT port: inv[index = mantissa] ---
     logic [ADDR_LUT_INV-1:0] index_LUT_inv;
     logic [COORD_W-1:0]      result_inv;
 
-	// --- Sortie vers la mémoire d'acutalisation des coord *** ---
-    logic signed [31:0]            mult_act_X;
-    logic signed [31:0]            mult_act_Y;
+	// --- Output to the mult_upd memory ---
+    logic signed [31:0]     mult_act_X;
+    logic signed [31:0]     mult_act_Y;
     logic [ADDR_P_IJ_W-1:0] addr_act;
     logic                   valid_out_b2;
     
@@ -150,46 +156,46 @@ module step_tb #(
 
     logic done_b2;
 
-    // DUT
+    // DUT grad block
     norm_entropy_grad #(
-        .NB_POINTS    (NB_POINTS),
-        .COORD_W      (COORD_W),
-        .ADDR_W       (ADDR_W),
+        .NB_POINTS       (NB_POINTS),
+        .COORD_W         (COORD_W),
+        .ADDR_W          (ADDR_W),
 
-        .P_IJ_W       (P_IJ_W),
-        .ADDR_P_IJ_W  (ADDR_P_IJ_W),
-        .ADDR_LUT_INV (ADDR_LUT_INV),
+        .P_IJ_W          (P_IJ_W),
+        .ADDR_P_IJ_W     (ADDR_P_IJ_W),
+        .ADDR_LUT_INV    (ADDR_LUT_INV),
         
-        .STEP_W (STEP_W),
-        .K_W    (K_W),
-        .D2_W   (D2_W)
+        .STEP_W          (STEP_W),
+        .K_W             (K_W),
+        .D2_W            (D2_W)
     ) bloc_grad (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk             (clk),
+        .rst_n           (rst_n),
 
-        .addr(addr_compute_coord_b2),
-        .coord_X(coord_X_b2),
-        .coord_Y(coord_Y_b2),
+        .addr            (addr_compute_coord_b2),
+        .coord_X         (coord_X_b2),
+        .coord_Y         (coord_Y_b2),
         
-        .addr_P_ij(addr_P_ij_b2),
-        .P_ij(P_ij_b2),
+        .addr_P_ij       (addr_P_ij_b2),
+        .P_ij            (P_ij_b2),
 
-        .index_LUT_inv(index_LUT_inv),
-        .result_inv(result_inv),
+        .index_LUT_inv   (index_LUT_inv),
+        .result_inv      (result_inv),
 
-        .mult_act_X(mult_act_X),
-        .mult_act_Y(mult_act_Y),
-        .addr_act(addr_act),
-        .valid_out(valid_out_b2),
+        .mult_act_X      (mult_act_X),
+        .mult_act_Y      (mult_act_Y),
+        .addr_act        (addr_act),
+        .valid_out       (valid_out_b2),
 
-        .sum_row_P(sum_row_P),
-        .out_i(out_i_b1),
-        .valid_sum_row_P(valid_sum_row_P),
+        .sum_row_P       (sum_row_P),
+        .out_i           (out_i_b1),
+        .valid_sum_row_P (valid_sum_row_P),
 
-        .entropy(entropy),
-        .valid_entropy(valid_entropy),
+        .entropy         (entropy),
+        .valid_entropy   (valid_entropy),
 
-        .done(done_b2)
+        .done            (done_b2)
     );
 
     logic               we_coord_b2;
@@ -197,24 +203,24 @@ module step_tb #(
     logic [COORD_W-1:0] data_in2_coord_b2;
     
 
-    // Memory coord pour le bloc grad
+    // DUT: grad-side coordinate memory (see ADR-0003, duplicated coordinate memories)
     memory_dual_port #(
         .ADDR_W (ADDR_W),
         .DATA_W (COORD_W)
     ) memory_coord_b2 (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_coord_b2),
-        .addr(addr_coord_b2),
-        .data_in1(data_in1_coord_b2),
-        .data_in2(data_in2_coord_b2),
+        .we        (we_coord_b2),
+        .addr      (addr_coord_b2),
+        .data_in1  (data_in1_coord_b2),
+        .data_in2  (data_in2_coord_b2),
 
-        .data_out1(coord_X_b2),
-        .data_out2(coord_Y_b2)
+        .data_out1 (coord_X_b2),
+        .data_out2 (coord_Y_b2)
     );
     
-    // DUT inv_LUT
+    // DUT: inv_LUT
     inv_LUT inv_LUT (
         .clk(clk),
         .rst_n(rst_n),
@@ -225,29 +231,28 @@ module step_tb #(
 
 
     // -------------------------------------------------------------------
-    // Déclaration bloc ping_pong_arbitrer + doubles mémoires P_ij
+    // ping_pong_arbiter and the two P_ij row buffers (see ADR-0003)
     // -------------------------------------------------------------------
-
     logic                   we_P_ij_A;
     logic [ADDR_P_IJ_W-1:0] addr_P_ij_A;
     logic [P_IJ_W-1:0]      data_in_P_ij_A;
     logic [P_IJ_W-1:0]      P_ij_A;
 
-    // memory P_ij bloc A
+    // P_ij row buffer A
     memory_dual_port #(
-        .ADDR_W (ADDR_P_IJ_W),
-        .DATA_W (P_IJ_W)
-    ) memory_P_ij_A (
-        .clk(clk),
-        .rst_n(rst_n),
+        .ADDR_W    (ADDR_P_IJ_W),
+        .DATA_W    (P_IJ_W)
+    ) P_ij_memory_A (
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_P_ij_A),
-        .addr(addr_P_ij_A),
-        .data_in1(data_in_P_ij_A),
-        .data_in2(),
+        .we        (we_P_ij_A),
+        .addr      (addr_P_ij_A),
+        .data_in1  (data_in_P_ij_A),
+        .data_in2  (),
 
-        .data_out1(P_ij_A),
-        .data_out2()
+        .data_out1 (P_ij_A),
+        .data_out2 ()
     );
 
 
@@ -256,79 +261,80 @@ module step_tb #(
     logic [P_IJ_W-1:0]      data_in_P_ij_B;
     logic [P_IJ_W-1:0]      P_ij_B;
 
-    // memory P_ij bloc B
+    // P_ij row buffer B
     memory_dual_port #(
-        .ADDR_W (ADDR_P_IJ_W),
-        .DATA_W (P_IJ_W)
-    ) memory_P_ij (
-        .clk(clk),
-        .rst_n(rst_n),
+        .ADDR_W    (ADDR_P_IJ_W),
+        .DATA_W    (P_IJ_W)
+    ) P_ij_memory_B (
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_P_ij_B),
-        .addr(addr_P_ij_B),
-        .data_in1(data_in_P_ij_B),
-        .data_in2(),
+        .we        (we_P_ij_B),
+        .addr      (addr_P_ij_B),
+        .data_in1  (data_in_P_ij_B),
+        .data_in2  (),
 
-        .data_out1(P_ij_B),
-        .data_out2()
+        .data_out1 (P_ij_B),
+        .data_out2 ()
     );
 
-        // ping_pong_arbitrer
-    ping_pong_arbitrer #(
-        .COORD_W (COORD_W),
-        .ADDR_W (ADDR_W)
-    ) memory_P_ij_arbitrer (
-        .clk(clk),
-        .rst_n(rst_n),
+    // ping_pong_arbitrer
+    ping_pong_arbiter #(
+        .ADDR_W         (ADDR_W),
+        .P_IJ_W         (P_IJ_W),
+        .ADDR_P_IJ_W    (ADDR_P_IJ_W)
+    ) memory_P_ij_arbiter (
+        .clk            (clk),
+        .rst_n          (rst_n),
 
-        .valid_p_ij_exp(valid_out_b1),   // pulse par élément, qualifie l'écriture (= valid_out de dist_mat_arg_exp)
-        .out_i_exp(out_i_b1),     // pulse de fin de ligne (= valid_sum_row_P), pour credit/config
-        .line_done_grad(done_b2), // pulse de fin de ligne côté grad (= done)
+        .valid_p_ij_exp (valid_out_b1), // Per-element write strobe (= dist_mat_arg_exp's valid_out)
+        .out_i_exp      (out_i_b1),     // Row index currently being written, used for buffer-select parity
+        .line_done_grad (done_b2),      // Row fully consumed by grad -- releases a ping-pong credit
 
-        // addr P_ij + P_ij à écrire (bloc exp)
-        .addr_P_ij_w(out_j_b1),
-        .P_ij_w(P_ij_b1),
+        // Write side (exp)
+        .addr_P_ij_w    (out_j_b1),
+        .P_ij_w         (P_ij_b1),
 
-        // addr P_ij + P_ij à écrire (bloc grad)
-        .addr_P_ij_r(addr_P_ij_b2),
-        .P_ij_r(P_ij_b2),
+        // Read side (grad)
+        .addr_P_ij_r    (addr_P_ij_b2),
+        .P_ij_r         (P_ij_b2),
 
-        // BRAM P_ij A
-        .addr_A(addr_P_ij_A),
-        .we_A(we_P_ij_A),
-        .w_data_A(data_in_P_ij_A),
-        .r_data_A(P_ij_A),
+        // Buffer A port
+        .addr_A         (addr_P_ij_A),
+        .we_A           (we_P_ij_A),
+        .w_data_A       (data_in_P_ij_A),
+        .r_data_A       (P_ij_A),
 
-        // BRAM P_ij B
-        .addr_B(addr_P_ij_B),
-        .we_B(we_P_ij_B),
-        .w_data_B(data_in_P_ij_B),
-        .r_data_B(P_ij_B),
+        // Buffer B port
+        .addr_B         (addr_P_ij_B),
+        .we_B           (we_P_ij_B),
+        .w_data_B       (data_in_P_ij_B),
+        .r_data_B       (P_ij_B),
 
-        .credit_avail(credit_avail)
+        .credit_avail   (credit_avail)
     );
 
 
-    // -------------------------------------------------------------------
-    // write memory task coord bloc exp (1) et bloc grad (2)
-    // -------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------
+    // Testbench tasks
+    // -------------------------------------------------------------------------
+
+    // Task to write coordinate data to memory (exp copy)
     task write_memory_coord_b1(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
-        control_mem_coord_b1   = 0;
-        we_coord_b1      = 1;
-        addr_coord_tb_b1 = addr_task;
-        data_in1_b1      = data_in1_task;
-        data_in2_b1      = data_in2_task;
+        control_mem_coord_b1 = 0;
+        we_coord_b1          = 1;
+        addr_coord_tb_b1     = addr_task;
+        data_in1_b1          = data_in1_task;
+        data_in2_b1          = data_in2_task;
 
         @(posedge clk);
 
-        we_coord_b1    = 0;
+        we_coord_b1          = 0;
         control_mem_coord_b1 = 1;
     endtask
 
-    always_comb begin
-        addr_coord_b1 = (control_mem_coord_b1 == 1) ? addr_coord_compute_b1 : addr_coord_tb_b1;
-    end
-
+    // Task to write coordinate data to memory (grad copy)
     task write_memory_coord_b2(input logic [ADDR_W-1:0] addr_task, input logic [15:0] data_in1_task, input logic [15:0] data_in2_task);
         control_mem_coord_b2 = 0;
         we_coord_b2          = 1;
@@ -342,14 +348,16 @@ module step_tb #(
         control_mem_coord_b2 = 1;
     endtask
 
+    // -------------------------------------------------------------------------
+    // Memory control multiplexing
+    // -------------------------------------------------------------------------
     always_comb begin
+        addr_coord_b1 = (control_mem_coord_b1 == 1) ? addr_coord_compute_b1 : addr_coord_tb_b1;
         addr_coord_b2 = (control_mem_coord_b2 == 1) ? addr_compute_coord_b2 : addr_coord_tb_b2;
     end
 
 
-
-
-
+    // Automatic task to monitor computation results
     logic [7:0] cnt_done_b2;
     task automatic monitor_results();
         int result_count = 0;
@@ -386,16 +394,20 @@ module step_tb #(
 
     always #5 clk = ~clk;
 
+    // -------------------------------------------------------------------------
+    // Testbench stimulus
+    // -------------------------------------------------------------------------
     integer fd;
     int ret;
     int xf, yf;
     int addr_file;
     initial begin
 
+        $display("\n=== Simulation start ===");
 
-        $display("\n=== début de la simulation ===");
-
-        // init
+        // ---------------------------------------------------------------------
+        // Initialization
+        // ---------------------------------------------------------------------
         clk                  =  0;
         rst_n                =  0;
         we_coord_b1          =  0;
@@ -414,15 +426,20 @@ module step_tb #(
             monitor_results();
         join_none
 
+        // ---------------------------------------------------------------------
+        // Reset
+        // ---------------------------------------------------------------------
         @(posedge clk);
         rst_n = 1;
         @(posedge clk);
         
-        // Écriture des vecteurs X_f et Y_f en mémoire (100 points)
+        // ---------------------------------------------------------------------
+        // Load point coordinates into both memory
+        // ---------------------------------------------------------------------
         fd = $fopen("data/cluster_fixed.txt", "r");
 
         if (fd == 0) begin
-            $fatal(1, "Impossible d'ouvrir cluster_fixed.txt");
+            $fatal(1, "Error while opening cluster_fixed.txt");
         end
 
         addr_file = 0;
@@ -437,31 +454,28 @@ module step_tb #(
             write_memory_coord_b1(addr_file[ADDR_W-1:0], xf[15:0], yf[15:0]);
             write_memory_coord_b2(addr_file[ADDR_W-1:0], xf[15:0], yf[15:0]);
 
-            //$display("point[%0d] Xf=%0d Yf=%0d", addr_file, xf, yf);
 
             addr_file++;
         end
 
         $fclose(fd);
 
-        $display("%0d points chargés depuis cluster_fixed.txt", addr_file);
+        $display("%0d points loaded from cluster_fixed.txt", addr_file);
 
-
-
-        
-        // lancement calcul
+        // ---------------------------------------------------------------------
+        // Start computation
+        // ---------------------------------------------------------------------
         control_mem_coord_b1 = 1;
         control_mem_coord_b2 = 1;
         start = 1;
         @(posedge clk);
         start = 0;
 
-
-        // attente de fin du calcul 2 premières lignes
+        // Wait for computation to complete
         wait (cnt_done_b2 == 3);
 
         #10;
-        $display("\n=== Fin de la simulation ===");
+        $display("\n=== Simulation completed ===");
         $finish;
     end
 

@@ -1,4 +1,13 @@
-
+//=============================================================================
+// Testbench: act_coord_tb
+//
+// Testbench for the upd block: loads a small subset of the full benchmark
+// point set and the initial snapshot of the update value memory (produced by
+// the fixed-point software reference model, see docs/ARCHITECTURE.md section 8),
+// runs the upd block to produce the updated coordinate for comparison
+// against the software reference.
+//
+//=============================================================================
 
 module act_coord_tb #(
     parameter int NB_POINTS = 100, // Number of points, Currently a fixed default
@@ -44,47 +53,47 @@ module act_coord_tb #(
 
     // DUT instantiation
     act_coord #(
-        .NB_POINTS (NB_POINTS),
-        .COORD_W   (COORD_W),
-        .ADDR_W    (ADDR_W)
+        .NB_POINTS   (NB_POINTS),
+        .COORD_W     (COORD_W),
+        .ADDR_W      (ADDR_W)
     ) dut_compute (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk         (clk),
+        .rst_n       (rst_n),
 
-        .start(start),
+        .start       (start),
 
-        .addr_coord(addr_coord_compute),
-        .we_coord(we_coord_compute),
+        .addr_coord  (addr_coord_compute),
+        .we_coord    (we_coord_compute),
 
-        .coord_X(coord_X),
-        .coord_Y(coord_Y),
+        .coord_X     (coord_X),
+        .coord_Y     (coord_Y),
 
-        .coord_X_act(coord_X_act_compute),
-        .coord_Y_act(coord_Y_act_compute),
+        .coord_X_act (coord_X_act_compute),
+        .coord_Y_act (coord_Y_act_compute),
 
-        .addr_act(addr_act_compute),
-        .mult_act_X(mult_act_X),
-        .mult_act_Y(mult_act_Y),
+        .addr_act    (addr_act_compute),
+        .mult_act_X  (mult_act_X),
+        .mult_act_Y  (mult_act_Y),
 
-        .done(done)
+        .done        (done)
     );
     
 
     // Coordinate memory
     memory_dual_port #(
-        .ADDR_W (ADDR_W),
-        .DATA_W (COORD_W)
+        .ADDR_W    (ADDR_W),
+        .DATA_W    (COORD_W)
     ) memory_coord (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_coord),
-        .addr(addr_coord),
-        .data_in1(coord_X_act),
-        .data_in2(coord_Y_act),
+        .we        (we_coord),
+        .addr      (addr_coord),
+        .data_in1  (coord_X_act),
+        .data_in2  (coord_Y_act),
 
-        .data_out1(coord_X),
-        .data_out2(coord_Y)
+        .data_out1 (coord_X),
+        .data_out2 (coord_Y)
     );
 
 
@@ -98,16 +107,16 @@ module act_coord_tb #(
         .ADDR_W (ADDR_W),
         .DATA_W (ACT_W)
     ) memory_act (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_act),
-        .addr(addr_act),
-        .data_in1(mult_act_X_in1),
-        .data_in2(mult_act_Y_in2),
+        .we        (we_act),
+        .addr      (addr_act),
+        .data_in1  (mult_act_X_in1),
+        .data_in2  (mult_act_Y_in2),
 
-        .data_out1(mult_act_X),
-        .data_out2(mult_act_Y)
+        .data_out1 (mult_act_X),
+        .data_out2 (mult_act_Y)
     );
 
 
