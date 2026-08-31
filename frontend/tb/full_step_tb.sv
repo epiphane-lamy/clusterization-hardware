@@ -1,18 +1,28 @@
-
+//=============================================================================
+// Testbench: full_step_tb
+//
+// Full-system testbench for NB_ITER steps, processed through the exp,
+// grad, ping-pong arbiter and upd blocks: loads a small subset of the full
+// benchmark point set (produced by the fixed-point software reference model,
+// see docs/ARCHITECTURE.md section 8), runs the full pipeline except
+// cluster_assign, and writes out the final coordinates after the first step
+// for comparison against the software reference.
+//
+//=============================================================================
 
 module full_step_tb #(
-    parameter int NB_POINTS    = 100,         // nombre de points stockés en dur, prochainement chargé au début du calcul <= 2**ADDR_W
-    parameter int NB_ITER      = 50,          // nombre d'itérations
-    parameter int COORD_W      = 16,          // largeur des coordonnees
-    parameter int ADDR_W       = 7,           // largeur des adresses points Xf
-    parameter int P_IJ_W       = 16,          // largeur des P_ij, fixed-point SIGNE
-    parameter int ADDR_P_IJ_W  = 7,           // largeur des adresses P_ij
-    parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
-    parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
-    parameter int ACT_W        = 32,          // largeur des valeurs d'actualisation, fixed-point SIGNE
-    parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
-    parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
-    parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
+    parameter int NB_POINTS    = 100,         // Number of points
+    parameter int NB_ITER      = 50,          // Number of iterations
+    parameter int COORD_W      = 16,          // Coordinate width
+    parameter int ADDR_W       = 7,           // Point address width
+    parameter int P_IJ_W       = 16,          // P_ij width, fixed-point
+    parameter int ADDR_P_IJ_W  = 7,           // P_ij address width (same ADR-0007 note as ADDR_W above)
+    parameter int ADDR_LUT_INV = 10,          // Inverse LUT address width
+    parameter int ADDR_LUT_EXP = 14,          // exp LUT address width
+    parameter int ACT_W        = 32,          // Update value width, signed fixed-point
+    parameter int STEP_W       = 6,           // Iteration counter width (max_iter=50 -> 6 bits is enough)
+    parameter int K_W          = 16,          // Precomputed K_step constant width, signed, always negative
+    parameter int SQ_W         = 2 * COORD_W, // dx*dx / dy*dy: product of two signed COORD_W-bit values
     parameter int D2_W         = SQ_W + 1     // D2 = x2 + y2
 	);
 
