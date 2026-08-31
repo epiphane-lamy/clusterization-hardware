@@ -25,7 +25,7 @@ export period_clk = $(PERIOD_CLK)
 #-----------------------------------------------------------------------------
 # General design dependent variables
 #-----------------------------------------------------------------------------
-export DESIGNS = clusterization#full_step_cluster#full_step#act_coord#cluster_assign#step#dist_mat_arg_exp#norm_entropy_grad
+export DESIGNS = clusterization#full_step_cluster#full_step#step#act_coord#dist_mat_arg_exp#norm_entropy_grad#cluster_assign
 export HDL_NAME = $(DESIGNS)
 export PROJECT_DIR := $(shell pwd)
 export BACKEND_DIR = $(PROJECT_DIR)/backend
@@ -88,96 +88,51 @@ export INVERTERS_CTS = INVX20 CLKINVX20 INVX16 INVX12 INVX8 INVX6 INVX4 INVX3 IN
 # Pads of chip
 # ---------------- LEFT ----------------
 export LEFT_CORE_PINS = \
-    control_mem_coord_load_b2 \
-    we_coord_load_b2 \
-    addr_coord_load_b2[0] \
-    addr_coord_load_b2[1] \
-    addr_coord_load_b2[2] \
-    addr_coord_load_b2[3] \
-    addr_coord_load_b2[4] \
-    addr_coord_load_b2[5] \
-    addr_coord_load_b2[6] \
-    addr_coord_load_b2[7] \
-    addr_coord_load_b2[8] \
-    addr_coord_load_b2[9] \
-    addr_coord_load_b2[10] \
-    data_in1_coord_load_b2[0] \
-    data_in1_coord_load_b2[1] \
-    data_in1_coord_load_b2[2] \
-    data_in1_coord_load_b2[3] \
-    data_in1_coord_load_b2[4] \
-    data_in1_coord_load_b2[5] \
-    data_in1_coord_load_b2[6] \
-    data_in1_coord_load_b2[7] \
-    data_in1_coord_load_b2[8] \
-    data_in1_coord_load_b2[9] \
-    data_in1_coord_load_b2[10] \
-    data_in1_coord_load_b2[11] \
-    data_in1_coord_load_b2[12] \
-    data_in1_coord_load_b2[13] \
-    data_in1_coord_load_b2[14] \
-    data_in1_coord_load_b2[15] \
-    data_in2_coord_load_b2[0] \
-    data_in2_coord_load_b2[1] \
-    data_in2_coord_load_b2[2] \
-    data_in2_coord_load_b2[3] \
-    data_in2_coord_load_b2[4] \
-    data_in2_coord_load_b2[5] \
-    data_in2_coord_load_b2[6] \
-    data_in2_coord_load_b2[7] \
-    data_in2_coord_load_b2[8] \
-    data_in2_coord_load_b2[9] \
-    data_in2_coord_load_b2[10] \
-    data_in2_coord_load_b2[11] \
-    data_in2_coord_load_b2[12] \
-    data_in2_coord_load_b2[13] \
-    data_in2_coord_load_b2[14] \
-    data_in2_coord_load_b2[15] \
-    control_mem_coord_load_b1 \
-    we_coord_load_b1 \
-    addr_coord_load_b1[0] \
-    addr_coord_load_b1[1] \
-    addr_coord_load_b1[2] \
-    addr_coord_load_b1[3] \
-    addr_coord_load_b1[4] \
-    addr_coord_load_b1[5] \
-    addr_coord_load_b1[6] \
-    addr_coord_load_b1[7] \
-    addr_coord_load_b1[8] \
-    addr_coord_load_b1[9] \
-    addr_coord_load_b1[10] \
-    data_in1_coord_load_b1[0] \
-    data_in1_coord_load_b1[1] \
-    data_in1_coord_load_b1[2] \
-    data_in1_coord_load_b1[3] \
-    data_in1_coord_load_b1[4] \
-    data_in1_coord_load_b1[5] \
-    data_in1_coord_load_b1[6] \
-    data_in1_coord_load_b1[7] \
-    data_in1_coord_load_b1[8] \
-    data_in1_coord_load_b1[9] \
-    data_in1_coord_load_b1[10] \
-    data_in1_coord_load_b1[11] \
-    data_in1_coord_load_b1[12] \
-    data_in1_coord_load_b1[13] \
-    data_in1_coord_load_b1[14] \
-    data_in1_coord_load_b1[15] \
-    data_in2_coord_load_b1[0] \
-    data_in2_coord_load_b1[1] \
-    data_in2_coord_load_b1[2] \
-    data_in2_coord_load_b1[3] \
-    data_in2_coord_load_b1[4] \
-    data_in2_coord_load_b1[5] \
-    data_in2_coord_load_b1[6] \
-    data_in2_coord_load_b1[7] \
-    data_in2_coord_load_b1[8] \
-    data_in2_coord_load_b1[9] \
-    data_in2_coord_load_b1[10] \
-    data_in2_coord_load_b1[11] \
-    data_in2_coord_load_b1[12] \
-    data_in2_coord_load_b1[13] \
-    data_in2_coord_load_b1[14] \
-    data_in2_coord_load_b1[15]
+    control_mem_coord_load \
+    we_coord_load \
+    addr_coord_load[0] \
+    addr_coord_load[1] \
+    addr_coord_load[2] \
+    addr_coord_load[3] \
+    addr_coord_load[4] \
+    addr_coord_load[5] \
+    addr_coord_load[6] \
+    addr_coord_load[7] \
+    addr_coord_load[8] \
+    addr_coord_load[9] \
+    addr_coord_load[10] \
+    data_in1_coord_load[0] \
+    data_in1_coord_load[1] \
+    data_in1_coord_load[2] \
+    data_in1_coord_load[3] \
+    data_in1_coord_load[4] \
+    data_in1_coord_load[5] \
+    data_in1_coord_load[6] \
+    data_in1_coord_load[7] \
+    data_in1_coord_load[8] \
+    data_in1_coord_load[9] \
+    data_in1_coord_load[10] \
+    data_in1_coord_load[11] \
+    data_in1_coord_load[12] \
+    data_in1_coord_load[13] \
+    data_in1_coord_load[14] \
+    data_in1_coord_load[15] \
+    data_in2_coord_load[0] \
+    data_in2_coord_load[1] \
+    data_in2_coord_load[2] \
+    data_in2_coord_load[3] \
+    data_in2_coord_load[4] \
+    data_in2_coord_load[5] \
+    data_in2_coord_load[6] \
+    data_in2_coord_load[7] \
+    data_in2_coord_load[8] \
+    data_in2_coord_load[9] \
+    data_in2_coord_load[10] \
+    data_in2_coord_load[11] \
+    data_in2_coord_load[12] \
+    data_in2_coord_load[13] \
+    data_in2_coord_load[14] \
+    data_in2_coord_load[15]
 
 
 # ---------------- RIGHT ----------------

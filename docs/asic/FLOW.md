@@ -43,14 +43,14 @@ The first full P&R pass used an automatically sized floorplan (Innovus's own def
 
 1. **Shrink the core area manually.** Rather than trust the automatic sizing, the die/core dimensions were reduced by hand once the first P&R pass confirmed the design was functionally complete and timing-clean, to remove the excess free space.
 2. **Re-adjust pin placement.** Shrinking the floorplan moved the macros closer together, which meant the pin locations found in §2.3 had to be revisited so pins still landed in a routable gap between macros rather than getting swallowed by a macro footprint.
-3. **Iterate on density while watching timing.** With the floorplan tightened, routing density rose from ~7% toward much higher values. Density was pushed up step by step, checking setup/hold timing after each iteration: setup timing kept passing comfortably as density increased, but hold slack degraded further each time. The final floorplan settled on a density of **74.309%** — the point found to be a good compromise between a small, cost-effective die area and keeping timing (particularly hold) within an acceptable margin. See `RESULTS.md` for the exact area/timing/power numbers of this final iteration compared to the initial, loosely-floorplanned one.
+3. **Iterate on density while watching timing.** With the floorplan tightened, routing density rose from ~7% toward much higher values. Density was pushed up step by step, checking setup/hold timing after each iteration: setup timing kept passing comfortably as density increased, but hold slack degraded further each time. The final floorplan settled on a density of **74.538%** — the point found to be a good compromise between a small, cost-effective die area and keeping timing (particularly hold) within an acceptable margin. See `RESULTS.md` for the exact area/timing/power numbers of this final iteration compared to the initial, loosely-floorplanned one.
 
 The effect of this pass is visible directly in the layout views. **Amoeba view** (colors the floorplan by owning block) makes the core-area shrink from step 1 obvious — the same macros, the same logic, packed into a visibly smaller die:
 
 <table>
 <tr>
 <td width="50%"><img src="img/floorplan_amoeba_view_1.png" alt="Amoeba view, unoptimized floorplan (v0)"><br><sub>Before — <code>v0</code>, automatically sized floorplan, ~7% density</sub></td>
-<td width="50%"><img src="img/floorplan_amoeba_view_2.png" alt="Amoeba view, optimized floorplan (v7)"><br><sub>After — <code>v7</code>, manually tightened floorplan, 74.309% density</sub></td>
+<td width="50%"><img src="img/floorplan_amoeba_view_2.png" alt="Amoeba view, optimized floorplan (v10)"><br><sub>After — <code>v10</code>, manually tightened floorplan, 74.538% density</sub></td>
 </tr>
 </table>
 
@@ -59,7 +59,7 @@ The effect of this pass is visible directly in the layout views. **Amoeba view**
 <table>
 <tr>
 <td width="50%"><img src="img/floorplan_congestion_view_1.png" alt="Congestion view, unoptimized floorplan (v0)"><br><sub>Before — <code>v0</code>, ~7% density</sub></td>
-<td width="50%"><img src="img/floorplan_congestion_view_2.png" alt="Congestion view, optimized floorplan (v7)"><br><sub>After — <code>v7</code>, 74.309% density</sub></td>
+<td width="50%"><img src="img/floorplan_congestion_view_2.png" alt="Congestion view, optimized floorplan (v10)"><br><sub>After — <code>v10</code>, 74.538% density</sub></td>
 </tr>
 </table>
 
