@@ -9,7 +9,7 @@ module full_step_cluster_tb #(
     parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS),           // largeur des adresses P_ij
     parameter int ADDR_LUT_INV = 10,          // largeur des adresses LUT exp
     parameter int ADDR_LUT_EXP = 14,          // largeur des adresses LUT exp
-    parameter int ACT_W        = 32,          // largeur des valeurs d'actualisation, fixed-point SIGNE
+    parameter int ACT_W        = 16,          // largeur des valeurs d'actualisation, fixed-point SIGNE
     parameter int STEP_W       = 6,           // largeur du compteur d'iteration (max_iter=50 -> 6 bits suffisent)
     parameter int K_W          = 16,          // largeur de la constante K_step precalculee (signee, negative)
     parameter int SQ_W         = 2 * COORD_W, // dx*dx et dy*dy : produit de deux signed COORD_W bits -> 2*COORD_W bits
@@ -197,8 +197,8 @@ module full_step_cluster_tb #(
     logic [COORD_W-1:0]      result_inv;
 
 	// --- Sortie vers la mémoire d'acutalisation des coord *** ---
-    logic signed [31:0]            mult_act_X;
-    logic signed [31:0]            mult_act_Y;
+    logic signed [ACT_W-1:0]            mult_act_X;
+    logic signed [ACT_W-1:0]            mult_act_Y;
     logic [ADDR_P_IJ_W-1:0] addr_act;
     logic [ADDR_P_IJ_W-1:0] addr_act_b2;
     logic                   valid_out_b2;
@@ -216,11 +216,8 @@ module full_step_cluster_tb #(
 
         .P_IJ_W       (P_IJ_W),
         .ADDR_P_IJ_W  (ADDR_P_IJ_W),
-        .ADDR_LUT_INV (ADDR_LUT_INV),
-        
-        .STEP_W (STEP_W),
-        .K_W    (K_W),
-        .D2_W   (D2_W)
+        .ACT_W        (ACT_W),
+        .ADDR_LUT_INV (ADDR_LUT_INV)
     ) bloc_grad (
         .clk(clk),
         .rst_n(rst_n),
@@ -386,8 +383,8 @@ module full_step_cluster_tb #(
     // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
     logic               control_mem_b3;
     logic [ADDR_W-1:0]  addr_act_b3;
-    logic signed [31:0] mult_act_X_mem;
-    logic signed [31:0] mult_act_Y_mem;
+    logic signed [ACT_W-1:0] mult_act_X_mem;
+    logic signed [ACT_W-1:0] mult_act_Y_mem;
 
     logic done_act;
 
@@ -395,7 +392,8 @@ module full_step_cluster_tb #(
     act_coord #(
         .NB_POINTS (NB_POINTS),
         .COORD_W   (COORD_W),
-        .ADDR_W    (ADDR_W)
+        .ADDR_W    (ADDR_W),
+        .ACT_W     (ACT_W)
     ) dut_compute (
         .clk(clk),
         .rst_n(rst_n),

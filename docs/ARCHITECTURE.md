@@ -147,9 +147,37 @@ This stage-by-stage quantization has a second benefit, independent of bus sizing
 
 See [ADR-0001](decisions/0001-fixed-point-quantization-chain.md).
 
+
 ---
 
-## 9. Verification strategy
+## 9. Top-level sequencing and coordinate-memory ownership
+
+Everything described so far explains how each mechanism works on its own. This section covers the two things that only exist at the toplevel, tying the whole pipeline together across the `NB_ITER` iterations: how iterations chain into each other automatically, and how the two duplicated coordinate memories end up shared, over time, by more than just `exp` and `grad`.
+
+### 9.1 Iteration chaining
+
+Only the very first iteration needs an external `start` pulse. From there, the toplevel advances the pipeline on its own:
+
+1. A per-row counter tracks how many rows `grad` has finished (`done` pulses, one per row) within the current iteration. Once all `NB_POINTS` rows are done, the iteration's compute phase is complete, and `act_coord`'s update pass is launched.
+2. Once `act_coord` finishes updating every point's coordinates, the toplevel checks whether more iterations remain. If so, it advances the iteration counter and relaunches `exp`/`grad` for the next iteration — no external intervention needed.
+3. Once the last iteration's update pass completes, a one-shot latch fires exactly once to launch the final `cluster_assign` pass instead of relaunching `exp`/`grad` again.
+
+This chain — row-sweep complete → update → next iteration (or final clustering) → repeat — is what turns `NB_ITER` separate row-sweeps into a single self-driving pipeline from the outside.
+
+### 9.2 Coordinate-memory ownership handoff
+
+`exp` and `grad` each read from their own dedicated copy of the coordinate memory (§4.3, ADR-0003) throughout normal computation. But two other moments need access to those same memories:
+
+- **`act_coord`'s update pass** (§4.5) needs to *write* the newly computed coordinates into **both** copies at once, to keep them in sync for the next iteration.
+- **`cluster_assign`'s final pass** (§3, Part 2) needs to *read* the converged coordinates once every iteration is done — from the `exp`-side copy only, since there's no further need for two independent read ports once the iterative loop has ended.
+
+Rather than have `exp`, `grad`, `act_coord`, and `cluster_assign` coordinate access to these memories directly with each other, the toplevel introduces a single point of arbitration per memory: each coordinate memory's port is time-shared between up to four possible requesters — an external load path (used to initialize the point set before the pipeline starts, and to read results back out), the owning block's own normal compute reads, `act_coord`'s broadcast write, and, for the `exp`-side copy only, `cluster_assign`'s final read pass. A priority mux selects exactly one requester per cycle: an external load always takes priority when active, `act_coord`'s update window overrides normal compute access once an iteration's compute is fully done, and `cluster_assign` takes over exclusively once every iteration has completed.
+
+The benefit of concentrating this in one place is that none of the four compute blocks needs to know the others exist: `exp` always just reads "its" coordinate memory, `act_coord` always just writes an update, and so on — the toplevel is the only place that needs to reason about who is allowed to touch a given memory at a given moment. See the toplevel RTL (`clusterization.sv`) for the exact ownership priority logic.
+
+---
+
+## 10. Verification strategy
 
 Design verification follows two levels, both compared against the bit-exact reference model described in §8 rather than against a floating-point resimulation:
 
