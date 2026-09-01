@@ -1,10 +1,10 @@
-# Dossiers work
+# Work directories
 **/work/
 
-# Dossiers Deliverables
+# Deliverable directories
 **/deliverables/
 
-# Fichiers .out
+# Output files
 *.out
 
 # Innovus generated files
@@ -16,7 +16,7 @@ genus*
 clusterization.geom.rpt
 clusterization.geom.rpt.old
 
-# Fichiers/dossiers générés frontend
+# Work directories
 frontend/src_c/clusterization
 frontend/src_c/generate_synth_file_LUT
 frontend/hdl_temp/
