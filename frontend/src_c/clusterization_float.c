@@ -1,4 +1,8 @@
-// This code was created by Elias de Almeida Ramos in order to do a 2D point clustering in software
+/*
+ * This code was originally created by **Elias de Almeida Ramos**
+ * for 2D point clustering. It is used here as part of the reference
+ * model generator for the entropy-based 2D clustering pipeline.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>

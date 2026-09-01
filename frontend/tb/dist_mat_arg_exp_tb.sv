@@ -94,28 +94,28 @@ module dist_mat_arg_exp_tb #(
 
     // Coordinate memory
     memory_dual_port #(
-        .ADDR_W (ADDR_W),
-        .DATA_W (COORD_W)
+        .ADDR_W    (ADDR_W),
+        .DATA_W    (COORD_W)
     ) coord_memory (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we),
-        .addr(addr),
-        .data_in1(data_in1),
-        .data_in2(data_in2),
+        .we        (we),
+        .addr      (addr),
+        .data_in1  (data_in1),
+        .data_in2  (data_in2),
 
-        .data_out1(coord_X),
-        .data_out2(coord_Y)
+        .data_out1 (coord_X),
+        .data_out2 (coord_Y)
     );
 
     // exp_LUT
     exp_LUT exp_LUT (
-        .clk(clk),
-        .rst_n(rst_n),
+        .clk        (clk),
+        .rst_n      (rst_n),
 
-        .index(index_LUT_exp),
-        .result_exp(result_exp)
+        .index      (index_LUT_exp),
+        .result_exp (result_exp)
     );
 
 
