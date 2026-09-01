@@ -45,10 +45,6 @@ get_db [get_db library_domain *best] .default
 get_db [vfind /libraries -library_domain worst] .active_operating_conditions
 get_db [vfind /libraries -library_domain best] .active_operating_conditions 
 #--
-#delete_obj [get_db library_domains *best]
-#delete_obj [get_db library_domains *worst]
-
-
 
 #-----------------------------------------------------------------------------
 # LEF, QRC and CAP Files
@@ -57,20 +53,12 @@ get_db [vfind /libraries -library_domain best] .active_operating_conditions
 # Load lef files
 set_db lef_library ${LEF_LIST}
 
-
-# Load cap table files
-#set_db cap_table_file ${WORST_CAP_LIST}
-
-
 # Load QRC tech files. OBS: Data from existing 'cap_table_file' is overwritten by technology file
 set_db qrc_tech_file ${QRC_LIST}
-
 
 # Use PLE mode
 get_db interconnect_mode
 set_db interconnect_mode ple ;# global
-
-
 
 
 #-----------------------------------------------------------------------------

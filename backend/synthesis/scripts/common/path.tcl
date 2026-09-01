@@ -1,7 +1,6 @@
 set PROJECT_DIR $env(PROJECT_DIR)
 set TECH_DIR $env(TECH_DIR)
 
-
 #-----------------------------------------------------------------------------
 # Common path variables (directory structure dependent)
 #-----------------------------------------------------------------------------
@@ -23,8 +22,5 @@ lappend FRONTEND_DIR $OTHERS
 # Setting technology directories
 #-----------------------------------------------------------------------------
 set LIB_DIR ${TECH_DIR}/gsclib045_svt_v4.4/gsclib045/timing
-#lappend LIB_DIR ${TECH_DIR}/io
 
-#set LEF_DIR ${TECH_DIR}/gsclib045_svt_v4.4/gsclib045/lef
-#export LEF_DIR ${TECH_DIR}/gsclib045_svt_v4.4/gsclib045/lef
 lappend LEF_DIR ${TECH_DIR}/gsclib045_svt_v4.4/gsclib045/lef

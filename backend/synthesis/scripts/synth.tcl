@@ -54,8 +54,6 @@ set BEST_LIST {
     /home/epiphane/projets/LIBS/lib/ram/RAM2P_1024x32.lib
 }
 
-set LEF_LIST {gsclib045_tech.lef gsclib045_macro.lef}
-
 set LEF_LIST {
     gsclib045_tech.lef
     gsclib045_macro.lef

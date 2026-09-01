@@ -134,7 +134,6 @@ export LEFT_CORE_PINS = \
     data_in2_coord_load[14] \
     data_in2_coord_load[15]
 
-
 # ---------------- RIGHT ----------------
 export RIGHT_CORE_PINS = \
     control_mem_cluster_read \
@@ -161,10 +160,8 @@ export RIGHT_CORE_PINS = \
     cluster_read[9] \
     cluster_read[10]
 
-
 # ---------------- TOP ----------------
 export TOP_CORE_PINS =
-
 
 # ---------------- BOTTOM ----------------
 export BOTTOM_CORE_PINS = \

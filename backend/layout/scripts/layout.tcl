@@ -69,16 +69,12 @@ connect_global_net $NET_ZERO -type tie_lo  -pin $NET_ZERO -inst *
 # Specify floorplan and pins
 #----------------------------------------------------------------------------- 
 # old automatic floorplan
-#create_floorplan -core_margins_by die -core_density_size 1 0.7 2.5 2.5 2.5 2.5
 create_floorplan -site CoreSite -core_size 1635.0 1350 5.0 5 5.0 5
 gui_show
 suspend
+# Enter "resume" once the floorplan is complete and the memory macros have been manually placed and oriented.
 check_floorplan
 
-#edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -side Left -layer 1 -spread_type center -spacing 1.0 -pin $LEFT_CORE_PINS 
-#edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -edge 1 -layer 1 -spread_type center -spacing 1.0 -pin $TOP_CORE_PINS 
-#edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -edge 2 -layer 1 -spread_type center -spacing 1.0 -pin $RIGHT_CORE_PINS 
-#edit_pin -fixed_pin 1 -unit micron -spread_direction clockwise -edge 3 -layer 1 -spread_type center -spacing 1.0 -pin $BOTTOM_CORE_PINS 
 edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Left -layer 5 -spread_type range -start 0.0 313.0 -end 0.0 377.0 -pin $LEFT_CORE_PINS
 edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Right -layer 5 -spread_type range -start 0.0 377.0 -end 0.0 313.0 -pin $RIGHT_CORE_PINS
 edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Bottom -layer 5 -spread_type range -start 803.0 0.0 -end 779.0 0.0 -pin $BOTTOM_CORE_PINS
@@ -99,15 +95,6 @@ route_special -connect core_pin -layer_change_range { Metal1(1) Metal11(11) } -b
 #----------------------------------------------------------------------------- 
 # Placement, CTS, and Routing
 #----------------------------------------------------------------------------- 
-# 1. Automatic placement of macros (RAMs)
-#plan_design
-
-# 2. Re-alignment to the manufacturing grid
-#snap_object -grid manufacturing [get_cells -filter "is_macro==true"]
-
-# 3. Lock RAM positions before global placement
-#set_db [get_db insts -if {.is_macro == true}] .status fixed
-
 place_opt_design 
 set_db extract_rc_engine pre_route
 extract_rc 
