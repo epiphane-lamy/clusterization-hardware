@@ -102,7 +102,8 @@ To run the full software-to-hardware comparison on your own 2D point benchmark:
 │   ├── filelist.f              # RTL simulation filelist using custom memory models
 │   └── filelist_bb.f           # RTL simulation filelist using behavioral models for synthesis black boxes
 └── backend/
-    └── layout/                 # Innovus deliverables and reports (synthesis, P&R, STA, power)
+    ├── layout/                 # Innovus place-and-route scripts, constraints, and reports
+    └── synthesis/              # Genus synthesis scripts, constraints, and reports
 ```
 
 ## Status
