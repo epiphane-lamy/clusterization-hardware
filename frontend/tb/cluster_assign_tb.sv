@@ -52,7 +52,7 @@ module cluster_assign_tb #(
         .COORD_W   (COORD_W),
         .ADDR_W    (ADDR_W),
         .TOL       (TOL)
-    ) dut_cluster_assign (
+    ) cluster_assign (
         .clk           (clk),
         .rst_n         (rst_n),
 
@@ -74,7 +74,7 @@ module cluster_assign_tb #(
     // Clusters memory
     memory_cluster #(
         .ADDR_W (ADDR_W)
-    ) mem_cluster (
+    ) memory_cluster (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -96,7 +96,7 @@ module cluster_assign_tb #(
     memory_dual_port #(
         .ADDR_W (ADDR_W),
         .DATA_W (COORD_W)
-    ) memory_coord (
+    ) coord_memory (
         .clk(clk),
         .rst_n(rst_n),
 

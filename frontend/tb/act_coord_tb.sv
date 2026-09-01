@@ -56,7 +56,7 @@ module act_coord_tb #(
         .NB_POINTS   (NB_POINTS),
         .COORD_W     (COORD_W),
         .ADDR_W      (ADDR_W)
-    ) dut_compute (
+    ) upd_block (
         .clk         (clk),
         .rst_n       (rst_n),
 
@@ -83,7 +83,7 @@ module act_coord_tb #(
     memory_dual_port #(
         .ADDR_W    (ADDR_W),
         .DATA_W    (COORD_W)
-    ) memory_coord (
+    ) coord_memory (
         .clk       (clk),
         .rst_n     (rst_n),
 
@@ -106,7 +106,7 @@ module act_coord_tb #(
     memory_dual_port #(
         .ADDR_W (ADDR_W),
         .DATA_W (ACT_W)
-    ) memory_act (
+    ) upd_memory (
         .clk       (clk),
         .rst_n     (rst_n),
 

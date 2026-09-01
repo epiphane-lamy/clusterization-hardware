@@ -67,7 +67,7 @@ module norm_entropy_grad_tb #(
         .P_IJ_W          (P_IJ_W),
         .ADDR_P_IJ_W     (ADDR_P_IJ_W),
         .ADDR_LUT_INV    (ADDR_LUT_INV)
-    ) dut_compute (
+    ) grad_block (
         .clk             (clk),
         .rst_n           (rst_n),
 
@@ -106,7 +106,7 @@ module norm_entropy_grad_tb #(
     memory_dual_port #(
         .ADDR_W    (ADDR_W),
         .DATA_W    (COORD_W)
-    ) memory_coord (
+    ) coord_memory (
         .clk       (clk),
         .rst_n     (rst_n),
 
@@ -126,19 +126,19 @@ module norm_entropy_grad_tb #(
 
     // P_ij memory 
     memory_dual_port #(
-        .ADDR_W (ADDR_P_IJ_W),
-        .DATA_W (P_IJ_W)
-    ) memory_P_ij (
-        .clk(clk),
-        .rst_n(rst_n),
+        .ADDR_W    (ADDR_P_IJ_W),
+        .DATA_W    (P_IJ_W)
+    ) P_ij_memory (
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-        .we(we_P_ij),
-        .addr(addr_P_ij),
-        .data_in1(data_in_P_ij),
-        .data_in2(),
+        .we        (we_P_ij),
+        .addr      (addr_P_ij),
+        .data_in1  (data_in_P_ij),
+        .data_in2  (),
 
-        .data_out1(P_ij),
-        .data_out2()
+        .data_out1 (P_ij),
+        .data_out2 ()
     );
 
     // inv_LUT

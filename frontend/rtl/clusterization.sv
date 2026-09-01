@@ -398,7 +398,6 @@ module clusterization #(
     // -------------------------------------------------------------------
     // upd (act_coord) block and the mult_upd memory
     // -------------------------------------------------------------------
- 
     logic start_b3; // Launches act_coord's full update pass over all points
 
     // --- Point coordinate port (broadcast write, see docs/blocks/act_coord.md) ---
@@ -407,7 +406,7 @@ module clusterization #(
     logic [COORD_W-1:0] coord_X_act;
     logic [COORD_W-1:0] coord_Y_act;
 
-    // --- Port BRAM mult_act (adresse incrementee chaque cycle) ---
+    // --- mult_upd BRAM port ---
     logic                    control_mem_b3; // 1 while act_coord owns both coordinate memories (see below)
     logic [ADDR_W-1:0]       addr_act_b3;
     logic signed [ACT_W-1:0] mult_act_X_mem;

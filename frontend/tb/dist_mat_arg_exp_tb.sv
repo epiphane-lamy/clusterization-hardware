@@ -53,30 +53,30 @@ module dist_mat_arg_exp_tb #(
 
     // DUT instantiation
     dist_mat_arg_exp #(
-        .NB_POINTS    (NB_POINTS),
-        .COORD_W      (COORD_W),
-        .ADDR_W       (ADDR_W),
-        .ADDR_LUT_EXP (ADDR_LUT_EXP),
-        .STEP_W       (STEP_W),
-        .K_W          (K_W)
-    ) dut_compute (
-        .clk  (clk),
-        .rst_n(rst_n),
+        .NB_POINTS     (NB_POINTS),
+        .COORD_W       (COORD_W),
+        .ADDR_W        (ADDR_W),
+        .ADDR_LUT_EXP  (ADDR_LUT_EXP),
+        .STEP_W        (STEP_W),
+        .K_W           (K_W)
+    ) exp_block (
+        .clk           (clk),
+        .rst_n         (rst_n),
 
-        .start   (start),
-        .step_idx(step_idx),
+        .start         (start),
+        .step_idx      (step_idx),
 
-        .addr   (addr_compute),
-        .coord_X(coord_X),
-        .coord_Y(coord_Y),
+        .addr          (addr_compute),
+        .coord_X       (coord_X),
+        .coord_Y       (coord_Y),
 
-        .index_LUT_exp(index_LUT_exp),
-        .result_exp   (result_exp),
+        .index_LUT_exp (index_LUT_exp),
+        .result_exp    (result_exp),
 
-        .P_ij     (P_ij),
-        .out_i    (out_i),
-        .out_j    (out_j),
-        .valid_out(valid_out),
+        .P_ij          (P_ij),
+        .out_i         (out_i),
+        .out_j         (out_j),
+        .valid_out     (valid_out),
 
         .sum_row_P      (sum_row_P),
         .valid_sum_row_P(valid_sum_row_P),
@@ -96,7 +96,7 @@ module dist_mat_arg_exp_tb #(
     memory_dual_port #(
         .ADDR_W (ADDR_W),
         .DATA_W (COORD_W)
-    ) memory (
+    ) coord_memory (
         .clk(clk),
         .rst_n(rst_n),
 

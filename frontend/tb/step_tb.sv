@@ -138,7 +138,7 @@ module step_tb #(
     logic [ADDR_W-1:0] addr_compute_coord_b2;
 
     // --- P_ij read port (via the ping-pong arbiter) ---
-    logic [ADDR_P_IJ_W-1:0]  addr_P_ij_b2;
+    logic [ADDR_P_IJ_W-1:0] addr_P_ij_b2;
     logic [P_IJ_W-1:0]      P_ij_b2;
 
     // --- Inverse LUT port: inv[index = mantissa] ---
@@ -169,7 +169,7 @@ module step_tb #(
         .STEP_W          (STEP_W),
         .K_W             (K_W),
         .D2_W            (D2_W)
-    ) bloc_grad (
+    ) grad_block (
         .clk             (clk),
         .rst_n           (rst_n),
 
