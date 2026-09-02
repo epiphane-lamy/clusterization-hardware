@@ -71,8 +71,8 @@ To run the full software-to-hardware comparison on your own 2D point benchmark:
 
 <table>
 <tr>
-<td width="50%" align="center"><img src="docs/img/clustering_result_software.png" alt="Software fixed-point clustering result"><br><sub>Software reference — fixed-point quantized chain</sub></td>
-<td width="50%" align="center"><img src="docs/img/clustering_result_rtl.png" alt="RTL simulation clustering result"><br><sub>RTL simulation — same benchmark</sub></td>
+<td width="50%" align="center"><img src="docs/img/clustering_result_software.svg" alt="Software fixed-point clustering result"><br><sub>Software reference — fixed-point quantized chain</sub></td>
+<td width="50%" align="center"><img src="docs/img/clustering_result_rtl.svg" alt="RTL simulation clustering result"><br><sub>RTL simulation — same benchmark</sub></td>
 </tr>
 </table>
 
