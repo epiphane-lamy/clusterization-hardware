@@ -2,7 +2,7 @@
 
 A 2D point-clustering algorithm — normally run in floating point on a CPU — reimplemented as a streaming hardware pipeline in SystemVerilog, taken through a full ASIC flow (RTL → GDSII) on a real memory-macro library. No soft-core CPU, no HLS: every arithmetic step, memory access, and control decision is hand-designed RTL.
 
-![Hardware toplevel architecture, one iteration](docs/img/archi_part1.png)
+![Hardware toplevel architecture, one iteration](docs/img/global_toplevel.png)
 
 ---
 
