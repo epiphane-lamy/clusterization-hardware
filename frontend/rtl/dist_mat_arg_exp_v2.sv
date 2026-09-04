@@ -62,6 +62,8 @@ module dist_mat_arg_exp_v2 #(
     output logic [P_IJ_W - 1:0]    P_ij,       // exp(arg_ij), saturated to 0 if arg out of LUT range
     output logic [ADDR_P_IJ_W-1:0] out_i,
     output logic [ADDR_P_IJ_W-1:0] out_j,
+    output logic [ADDR_P_IJ_W-1:0] out_i_sum,
+    output logic [ADDR_P_IJ_W-1:0] out_j_sum,
     output logic                   valid_out,
 
     output logic [SUM_ROW_P_W-1:0] sum_row_P,
@@ -396,8 +398,7 @@ module dist_mat_arg_exp_v2 #(
     logic              valid_7_sum;
 
     logic              valid_out_sum;
-    logic [ADDR_W-1:0] out_i_sum, out_j_sum;
-    logic [P_IJ_W - 1:0] P_ij,
+    logic [P_IJ_W - 1:0] P_ij_sum;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -411,7 +412,7 @@ module dist_mat_arg_exp_v2 #(
             valid_out_sum <= 1'b0;
             out_i_sum     <= '0;
             out_j_sum     <= '0;
-            P_ij          <= '0;
+            P_ij_sum      <= '0;
         end else begin
                         
             dx_sum <= $signed({1'b0,coord_X_i_sum}) - $signed({1'b0,coord_X});
