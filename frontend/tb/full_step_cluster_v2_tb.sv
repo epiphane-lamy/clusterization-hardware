@@ -109,6 +109,7 @@ module full_step_cluster_v2_tb #(
 
 
     logic credit_avail;
+    logic done_b2;
     logic done_b1;
 
     // DUT exp block
@@ -221,7 +222,6 @@ module full_step_cluster_v2_tb #(
     logic [31:0] entropy;
     logic        valid_entropy;
 
-    logic done_b2;
 
     // DUT: grad block
     norm_entropy_grad_v2 #(
@@ -253,7 +253,7 @@ module full_step_cluster_v2_tb #(
         .valid_out       (valid_out_b2),
 
         .sum_row_P       (sum_row_P),
-        .out_i           (out_i_b1_sum),
+        .out_i_sum       (out_i_b1_sum),
         .valid_sum_row_P (valid_sum_row_P),
 
         .entropy         (entropy),
