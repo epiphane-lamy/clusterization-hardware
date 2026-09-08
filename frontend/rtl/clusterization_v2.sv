@@ -23,7 +23,7 @@
 // See docs/blocks/*.md for the internals of each instantiated block.
 //=============================================================================
 
-module clusterization_v2 #(
+module clusterization #(
     parameter int NB_POINTS    = 1250,              // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
     parameter int NB_ITER      = 50,                // Number of iterations
     parameter int COORD_W      = 16,                // Coordinate width
@@ -124,21 +124,24 @@ module clusterization_v2 #(
 
     logic signed [ADDR_LUT_EXP-1:0] index_LUT_exp;
     logic signed [COORD_W-1:0]      result_exp;
+    logic signed [ADDR_LUT_EXP-1:0] index_LUT_exp_sum;
+    logic signed [COORD_W-1:0] result_exp_sum;
 
 	// --- exp block outputs ---
-    logic [COORD_W-1:0] P_ij_b1;
+    logic [COORD_W-1:0] P_ij;
     logic [ADDR_W-1:0]  out_i_b1;
     logic [ADDR_W-1:0]  out_j_b1;
-    logic               valid_out_b1;
+    logic [ADDR_W-1:0]  out_i_b1_sum;
+    logic [ADDR_W-1:0]  out_j_b1_sum;
+    logic               valid_P_ij;
 
     logic        valid_sum_row_P;
     logic [31:0] sum_row_P;
 
-    logic credit_avail;
     logic done_b1;
 
     // DUT exp block
-    dist_mat_arg_exp #(
+    dist_mat_arg_exp_v2 #(
         .NB_POINTS       (NB_POINTS),
         .COORD_W         (COORD_W),
         .ADDR_W          (ADDR_W),
@@ -148,29 +151,32 @@ module clusterization_v2 #(
         .K_W             (K_W),
         .D2_W            (D2_W)
     ) exp_block (
-        .clk             (clk),
-        .rst_n           (rst_n),
+        .clk               (clk),
+        .rst_n             (rst_n),
 
-        .start           (start_b1),
-        .step_idx        (step_idx),
+        .start             (start_b1),
+        .step_idx          (step_idx),
 
-        .addr            (addr_coord_compute_b1),
-        .coord_X         (coord_X_b1),
-        .coord_Y         (coord_Y_b1),
+        .addr              (addr_coord_compute_b1),
+        .coord_X           (coord_X_b1),
+        .coord_Y           (coord_Y_b1),
 
-        .index_LUT_exp   (index_LUT_exp),
-        .result_exp      (result_exp),
+        .index_LUT_exp     (index_LUT_exp),
+        .result_exp        (result_exp),
+        .index_LUT_exp_sum (index_LUT_exp_sum),
+        .result_exp_sum    (result_exp_sum),
 
-        .P_ij            (P_ij_b1),
-        .out_i           (out_i_b1),
-        .out_j           (out_j_b1),
-        .valid_out       (valid_out_b1),
+        .P_ij              (P_ij),
+        .out_i             (out_i_b1),
+        .out_j             (out_j_b1),
+        .out_i_sum         (out_i_b1_sum),
+        .out_j_sum         (out_j_b1_sum),
+        .valid_out         (valid_P_ij),
 
-        .sum_row_P       (sum_row_P),
-        .valid_sum_row_P (valid_sum_row_P),
+        .sum_row_P         (sum_row_P),
+        .valid_sum_row_P   (valid_sum_row_P),
 
-        .credit_avail    (credit_avail),
-        .done            (done_b1)
+        .done              (done_b1)
     );
 
     // memory access
@@ -179,30 +185,16 @@ module clusterization_v2 #(
     logic [COORD_W-1:0] data_in2_coord_b1;
     
 
-    // DUT: exp-side coordinate memory (see ADR-0003, duplicated coordinate memories)
-    memory_dual_port #(
-        .ADDR_W (ADDR_W),
-        .DATA_W (COORD_W)
-    ) coord_memory_b1 (
-        .clk       (clk),
-        .rst_n     (rst_n),
-
-        .we        (we_coord_b1),
-        .addr      (addr_coord_b1),
-        .data_in1  (data_in1_coord_b1),
-        .data_in2  (data_in2_coord_b1),
-
-        .data_out1 (coord_X_b1),
-        .data_out2 (coord_Y_b1)
-    );
-
     // DUT: exp_LUT
-    exp_LUT exp_LUT (
-        .clk        (clk),
-        .rst_n      (rst_n),
+    exp_LUT_v2 exp_LUT (
+        .clk          (clk),
+        .rst_n        (rst_n),
 
-        .index      (index_LUT_exp),
-        .result_exp (result_exp)
+        .index_a      (index_LUT_exp),
+        .result_exp_a (result_exp),
+
+        .index_b      (index_LUT_exp_sum),
+        .result_exp_b (result_exp_sum)
     );
 
 
@@ -214,10 +206,6 @@ module clusterization_v2 #(
     logic [COORD_W-1:0] coord_Y_b2;
 
     logic [ADDR_W-1:0] addr_coord_compute_b2;
-
-    // --- P_ij read port (via the ping-pong arbiter) ---
-    logic [ADDR_P_IJ_W-1:0] addr_P_ij_b2;
-    logic [P_IJ_W-1:0]      P_ij_b2;
 
     // --- Inverse LUT port: inv[index = mantissa] ---
     logic [ADDR_LUT_INV-1:0] index_LUT_inv;
@@ -239,7 +227,7 @@ module clusterization_v2 #(
     // (sum_row_P / out_i / valid_sum_row_P) documented in docs/blocks/exp_block.md
     // section 5 and docs/blocks/grad_block.md section 4 is realized here simply
     // by wiring exp's own out_i output directly into grad's out_i input.
-    norm_entropy_grad #(
+    norm_entropy_grad_v2 #(
         .NB_POINTS       (NB_POINTS),
         .COORD_W         (COORD_W),
         .ADDR_W          (ADDR_W),
@@ -256,8 +244,8 @@ module clusterization_v2 #(
         .coord_X         (coord_X_b2),
         .coord_Y         (coord_Y_b2),
         
-        .addr_P_ij       (addr_P_ij_b2),
-        .P_ij            (P_ij_b2),
+        .valid_P_ij      (valid_P_ij),
+        .P_ij            (P_ij),
 
         .index_LUT_inv   (index_LUT_inv),
         .result_inv      (result_inv),
@@ -268,7 +256,7 @@ module clusterization_v2 #(
         .valid_out       (valid_out_b2),
 
         .sum_row_P       (sum_row_P),
-        .out_i           (out_i_b1),
+        .out_i_sum       (out_i_b1_sum),
         .valid_sum_row_P (valid_sum_row_P),
 
         .entropy         (entropy),
@@ -284,21 +272,30 @@ module clusterization_v2 #(
     logic [COORD_W-1:0] data_in2_coord_tb_b2;
     
 
-    // DUT: grad-side coordinate memory (see ADR-0003, duplicated coordinate memories)
-    memory_dual_port #(
-        .ADDR_W    (ADDR_W),
-        .DATA_W    (COORD_W)
-    ) coord_memory_b2 (
-        .clk       (clk),
-        .rst_n     (rst_n),
 
-        .we        (we_coord_b2),
-        .addr      (addr_coord_b2),
-        .data_in1  (data_in1_coord_b2),
-        .data_in2  (data_in2_coord_b2),
+    // DUT: coordinate memory shared between exp and gard block (see ADR-000X, coordinate memories)
+    memory_dual_port_v2 #(
+        .ADDR_W      (ADDR_W),
+        .DATA_W      (COORD_W)
+    ) coord_memory (
+        .clk         (clk),
+        .rst_n       (rst_n),
 
-        .data_out1 (coord_X_b2),
-        .data_out2 (coord_Y_b2)
+        .we_a        (we_coord_b1),
+        .addr_a      (addr_coord_b1),
+        .data_in_x_a  (data_in1_coord_b1),
+        .data_in_y_a  (data_in2_coord_b1),
+
+        .data_out_x_a (coord_X_b1),
+        .data_out_y_a (coord_Y_b1),
+
+        .we_b        (we_coord_b2),
+        .addr_b      (addr_coord_b2),
+        .data_in_x_b  (data_in1_coord_b2),
+        .data_in_y_b  (data_in2_coord_b2),
+
+        .data_out_x_b (coord_X_b2),
+        .data_out_y_b (coord_Y_b2)
     );
     
     // DUT: inv_LUT
@@ -309,90 +306,6 @@ module clusterization_v2 #(
         .index      (index_LUT_inv),
         .result_inv (result_inv)
     );
-
-
-    // -------------------------------------------------------------------
-    // ping_pong_arbiter and the two P_ij row buffers (see ADR-0003)
-    // -------------------------------------------------------------------
- 
-    logic                   we_P_ij_A;
-    logic [ADDR_P_IJ_W-1:0] addr_P_ij_A;
-    logic [P_IJ_W-1:0]      data_in_P_ij_A;
-    logic [P_IJ_W-1:0]      P_ij_A;
-
-    // P_ij row buffer A
-    memory_single_port #(
-        .ADDR_W   (ADDR_P_IJ_W),
-        .DATA_W   (P_IJ_W)
-    ) P_ij_memory_A (
-        .clk      (clk),
-        .rst_n    (rst_n),
-
-        .we       (we_P_ij_A),
-        .addr     (addr_P_ij_A),
-        .data_in  (data_in_P_ij_A),
-
-        .data_out (P_ij_A)
-    );
-
-
-    logic                   we_P_ij_B;
-    logic [ADDR_P_IJ_W-1:0] addr_P_ij_B;
-    logic [P_IJ_W-1:0]      data_in_P_ij_B;
-    logic [P_IJ_W-1:0]      P_ij_B;
-
-    // P_ij row buffer B
-    memory_single_port #(
-        .ADDR_W   (ADDR_P_IJ_W),
-        .DATA_W   (P_IJ_W)
-    ) P_ij_memory_B (
-        .clk      (clk),
-        .rst_n    (rst_n),
-
-        .we       (we_P_ij_B),
-        .addr     (addr_P_ij_B),
-        .data_in  (data_in_P_ij_B),
-
-        .data_out (P_ij_B)
-    );
-
-    // ping_pong_arbiter: mediates exp's writes and grad's reads across
-    // buffers A/B (see docs/blocks/ping_pong_arbiter.md).
-    ping_pong_arbiter #(
-        .ADDR_W         (ADDR_W),
-        .P_IJ_W         (P_IJ_W),
-        .ADDR_P_IJ_W    (ADDR_P_IJ_W)
-    ) P_ij_memory_arbiter (
-        .clk            (clk),
-        .rst_n          (rst_n),
-
-        .valid_p_ij_exp (valid_out_b1), // Per-element write strobe (= dist_mat_arg_exp's valid_out)
-        .out_i_exp      (out_i_b1),     // Row index currently being written, used for buffer-select parity
-        .line_done_grad (done_b2),      // Row fully consumed by grad -- releases a ping-pong credit
-
-        // Write side (exp)
-        .addr_P_ij_w    (out_j_b1),
-        .P_ij_w         (P_ij_b1),
-
-        // Read side (grad)
-        .addr_P_ij_r    (addr_P_ij_b2),
-        .P_ij_r         (P_ij_b2),
-
-        // Buffer A port
-        .addr_A         (addr_P_ij_A),
-        .we_A           (we_P_ij_A),
-        .w_data_A       (data_in_P_ij_A),
-        .r_data_A       (P_ij_A),
-
-        // Buffer B port
-        .addr_B         (addr_P_ij_B),
-        .we_B           (we_P_ij_B),
-        .w_data_B       (data_in_P_ij_B),
-        .r_data_B       (P_ij_B),
-
-        .credit_avail   (credit_avail)
-    );
-
 
  
     // -------------------------------------------------------------------

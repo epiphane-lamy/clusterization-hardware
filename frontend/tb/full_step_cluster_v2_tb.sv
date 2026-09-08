@@ -102,14 +102,11 @@ module full_step_cluster_v2_tb #(
     logic [ADDR_W-1:0]  out_j_b1;
     logic [ADDR_W-1:0]  out_i_b1_sum;
     logic [ADDR_W-1:0]  out_j_b1_sum;
-    logic               valid_out_b1;
+    logic               valid_P_ij;
 
     logic [31:0] sum_row_P;
     logic        valid_sum_row_P;
 
-
-    logic credit_avail;
-    logic done_b2;
     logic done_b1;
 
     // DUT exp block
@@ -142,7 +139,7 @@ module full_step_cluster_v2_tb #(
         .out_j             (out_j_b1),
         .out_i_sum         (out_i_b1_sum),
         .out_j_sum         (out_j_b1_sum),
-        .valid_out         (valid_out_b1),
+        .valid_out         (valid_P_ij),
 
         .sum_row_P         (sum_row_P),
         .valid_sum_row_P   (valid_sum_row_P),
@@ -182,8 +179,6 @@ module full_step_cluster_v2_tb #(
     logic [ADDR_W-1:0] addr_coord_tb_b2;
     logic [ADDR_W-1:0] addr_coord_compute_b2;
 
-    // --- P_ij read port (via the ping-pong arbiter) ---
-    logic              valid_P_ij;
 
     // --- Inverse LUT port: inv[index = mantissa] ---
     logic [ADDR_LUT_INV-1:0] index_LUT_inv;
@@ -199,6 +194,7 @@ module full_step_cluster_v2_tb #(
     logic [31:0] entropy;
     logic        valid_entropy;
 
+    logic done_b2;
 
     // DUT: grad block
     norm_entropy_grad_v2 #(
@@ -218,7 +214,7 @@ module full_step_cluster_v2_tb #(
         .coord_X         (coord_X_b2),
         .coord_Y         (coord_Y_b2),
         
-        .valid_P_ij      (valid_out_b1),
+        .valid_P_ij      (valid_P_ij),
         .P_ij            (P_ij),
 
         .index_LUT_inv   (index_LUT_inv),
@@ -247,25 +243,7 @@ module full_step_cluster_v2_tb #(
     logic [COORD_W-1:0] data_in2_coord_tb_b2;
     
 
-    // DUT: grad-side coordinate memory (see ADR-0003, duplicated coordinate memories)
-    /*
-    memory_dual_port #(
-        .ADDR_W    (ADDR_W),
-        .DATA_W    (COORD_W)
-    ) coord_memory_b2 (
-        .clk       (clk),
-        .rst_n     (rst_n),
-
-        .we        (we_coord_b2),
-        .addr      (addr_coord_b2),
-        .data_in1  (data_in1_coord_b2),
-        .data_in2  (data_in2_coord_b2),
-
-        .data_out1 (coord_X_b2),
-        .data_out2 (coord_Y_b2)
-    );
-    */
-
+    // DUT: coordinate memory shared between exp and gard block (see ADR-000X, coordinate memories)
     memory_dual_port_v2 #(
         .ADDR_W      (ADDR_W),
         .DATA_W      (COORD_W)

@@ -247,7 +247,10 @@ module clusterization_tb #(
             yf_real = ((yf / 256.0) / scale + ymin) / norm_scale + center_y;
             $fwrite(fd_cluster, "%f %f ", xf_real, yf_real);
 
-            $fdisplay(fd_cluster, "%0d", clusterization.memory_cluster.u_ram.memory[addr_file]);
+            // display for clusterization
+            //$fdisplay(fd_cluster, "%0d", clusterization.memory_cluster.u_ram.memory[addr_file]);
+            // display for clusterization_v2
+            $fdisplay(fd_cluster, "%0d", clusterization.memory_cluster.cluster[addr_file]);
 
             addr_file++;
         end

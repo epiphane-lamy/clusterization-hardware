@@ -4,6 +4,7 @@
 // fully described in RTL and used for simulation.
 // =====================================
 rtl/clusterization_pkg.sv
+rtl/clusterization_v2.sv
 
 rtl/memory_single_port.sv
 
@@ -31,3 +32,5 @@ tb/cluster_assign_tb.sv
 tb/act_coord_tb.sv
 tb/norm_entropy_grad_tb.sv
 tb/dist_mat_arg_exp_tb.sv
+
+tb/clusterization_tb.sv
