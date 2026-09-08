@@ -8,6 +8,7 @@ rtl/clusterization_pkg.sv
 rtl/memory_single_port.sv
 
 rtl/memory_dual_port.sv
+rtl/memory_dual_port_v2.sv
 
 rtl/memory_cluster.sv
 
