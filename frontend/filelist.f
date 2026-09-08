@@ -21,6 +21,7 @@ rtl/inv_LUT.sv
 rtl/dist_mat_arg_exp.sv
 rtl/dist_mat_arg_exp_v2.sv
 rtl/exp_LUT.sv
+rtl/exp_LUT_v2.sv
 
 tb/full_step_cluster_tb.sv
 tb/full_step_cluster_v2_tb.sv

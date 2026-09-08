@@ -159,41 +159,16 @@ module full_step_cluster_v2_tb #(
     logic [COORD_W-1:0] data_in2_coord_tb_b1;
     
 
-    // DUT: exp-side coordinate memory (see ADR-0003, duplicated coordinate memories)
-    /*
-    memory_dual_port #(
-        .ADDR_W    (ADDR_W),
-        .DATA_W    (COORD_W)
-    ) coord_memory_b1 (
-        .clk       (clk),
-        .rst_n     (rst_n),
-
-        .we        (we_coord_b1),
-        .addr      (addr_coord_b1),
-        .data_in1  (data_in1_coord_b1),
-        .data_in2  (data_in2_coord_b1),
-
-        .data_out1 (coord_X_b1),
-        .data_out2 (coord_Y_b1)
-    );
-    */
-
     // DUT: exp_LUT
-    exp_LUT exp_LUT (
-        .clk        (clk),
-        .rst_n      (rst_n),
+    exp_LUT_v2 exp_LUT (
+        .clk          (clk),
+        .rst_n        (rst_n),
 
-        .index      (index_LUT_exp),
-        .result_exp (result_exp)
-    );
+        .index_a      (index_LUT_exp),
+        .result_exp_a (result_exp),
 
-    // DUT: exp_LUT_sum
-    exp_LUT exp_LUT_sum (
-        .clk        (clk),
-        .rst_n      (rst_n),
-
-        .index      (index_LUT_exp_sum),
-        .result_exp (result_exp_sum)
+        .index_b      (index_LUT_exp_sum),
+        .result_exp_b (result_exp_sum)
     );
 
     // -------------------------------------------------------------------
