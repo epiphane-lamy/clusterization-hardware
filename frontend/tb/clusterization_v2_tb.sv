@@ -51,7 +51,7 @@ module clusterization_v2_tb #(
     logic               done;
 
 
-    clusterization #(
+    clusterization_v2 #(
         .NB_POINTS                (NB_POINTS),
         .NB_ITER                  (NB_ITER),
         .COORD_W                  (COORD_W),

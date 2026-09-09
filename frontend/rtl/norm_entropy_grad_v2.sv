@@ -118,7 +118,7 @@ module norm_entropy_grad_v2 #(
     end
 
     logic [P_IJ_W-1:0] P_ij_reg;
-    always_ff @(posedge clk or negedge rst_n) begin
+    always_ff @(posedge clk) begin
         P_ij_reg  <= P_ij;
     end
 

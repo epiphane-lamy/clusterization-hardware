@@ -86,19 +86,33 @@ set_db [get_db library_domain *$lib_type] .default true
 
 set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
 
-# Read SystemVerilog files
+# Read SystemVerilog files for the v1 architecture
+#read_hdl -sv {
+#    rtl/clusterization_pkg.sv
+#    rtl/clusterization.sv
+#    rtl/cluster_assign.sv
+#    rtl/act_coord.sv
+#    rtl/ping_pong_arbiter.sv
+#    rtl/norm_entropy_grad.sv
+#    synth_files/inv_LUT_synth.sv
+#    synth_files/dist_mat_arg_exp_synth.sv
+#    synth_files/exp_LUT_synth.sv
+#    synth_files/memory_dual_port_synth.sv
+#    synth_files/memory_single_port_synth.sv
+#    synth_files/memory_cluster_synth.sv
+#}
+
+# Read SystemVerilog files for the v2 architecture
 read_hdl -sv {
     rtl/clusterization_pkg.sv
-    rtl/clusterization.sv
+    rtl/clusterization_v2.sv
     rtl/cluster_assign.sv
     rtl/act_coord.sv
-    rtl/ping_pong_arbiter.sv
-    rtl/norm_entropy_grad.sv
+    rtl/norm_entropy_grad_v2.sv
     synth_files/inv_LUT_synth.sv
-    synth_files/dist_mat_arg_exp_synth.sv
-    synth_files/exp_LUT_synth.sv
+    synth_files/dist_mat_arg_exp_v2_synth.sv
+    synth_files/exp_LUT_v2_synth.sv
     synth_files/memory_dual_port_synth.sv
-    synth_files/memory_single_port_synth.sv
     synth_files/memory_cluster_synth.sv
 }
 

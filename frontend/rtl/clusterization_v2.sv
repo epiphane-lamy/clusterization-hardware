@@ -23,13 +23,13 @@
 // See docs/blocks/*.md for the internals of each instantiated block.
 //=============================================================================
 
-module clusterization #(
+module clusterization_v2 #(
     parameter int NB_POINTS    = 1250,              // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
     parameter int NB_ITER      = 50,                // Number of iterations
     parameter int COORD_W      = 16,                // Coordinate width
-    parameter int ADDR_W       = $clog2(NB_POINTS), // Point address width
+    parameter int ADDR_W       = 12,                // Point address width
     parameter int P_IJ_W       = 16,                // P_ij width, signed fixed-point
-    parameter int ADDR_P_IJ_W  = $clog2(NB_POINTS), // P_ij address width (same ADR-0007 note as ADDR_W above)
+    parameter int ADDR_P_IJ_W  = 12,                // P_ij address width (same ADR-0007 note as ADDR_W above)
     parameter int ADDR_LUT_INV = 10,                // Inverse LUT address width
     parameter int ADDR_LUT_EXP = 14,                // exp LUT address width
     parameter int ACT_W        = 16,                // Update value width, signed fixed-point
