@@ -155,6 +155,22 @@ module full_step_cluster_v2_tb #(
     logic [COORD_W-1:0] data_in1_coord_tb_b1;
     logic [COORD_W-1:0] data_in2_coord_tb_b1;
     
+    // DUT: exp-side coordinate memory (see ADR-0003, duplicated coordinate memories)
+    memory_dual_port #(
+        .ADDR_W    (ADDR_W),
+        .DATA_W    (COORD_W)
+    ) coord_memory_b1 (
+        .clk       (clk),
+        .rst_n     (rst_n),
+
+        .we        (we_coord_b1),
+        .addr      (addr_coord_b1),
+        .data_in1  (data_in1_coord_b1),
+        .data_in2  (data_in2_coord_b1),
+
+        .data_out1 (coord_X_b1),
+        .data_out2 (coord_Y_b1)
+    );
 
     // DUT: exp_LUT
     exp_LUT_v2 exp_LUT (
@@ -242,30 +258,21 @@ module full_step_cluster_v2_tb #(
     logic [COORD_W-1:0] data_in1_coord_tb_b2;
     logic [COORD_W-1:0] data_in2_coord_tb_b2;
     
+    // DUT: grad-side coordinate memory (see ADR-0003, duplicated coordinate memories)
+    memory_dual_port #(
+        .ADDR_W    (ADDR_W),
+        .DATA_W    (COORD_W)
+    ) coord_memory_b2 (
+        .clk       (clk),
+        .rst_n     (rst_n),
 
-    // DUT: coordinate memory shared between exp and gard block (see ADR-000X, coordinate memories)
-    memory_dual_port_v2 #(
-        .ADDR_W      (ADDR_W),
-        .DATA_W      (COORD_W)
-    ) coord_memory (
-        .clk         (clk),
-        .rst_n       (rst_n),
+        .we        (we_coord_b2),
+        .addr      (addr_coord_b2),
+        .data_in1  (data_in1_coord_b2),
+        .data_in2  (data_in2_coord_b2),
 
-        .we_a        (we_coord_b1),
-        .addr_a      (addr_coord_b1),
-        .data_in_x_a  (data_in1_coord_b1),
-        .data_in_y_a  (data_in2_coord_b1),
-
-        .data_out_x_a (coord_X_b1),
-        .data_out_y_a (coord_Y_b1),
-
-        .we_b        (we_coord_b2),
-        .addr_b      (addr_coord_b2),
-        .data_in_x_b  (data_in1_coord_b2),
-        .data_in_y_b  (data_in2_coord_b2),
-
-        .data_out_x_b (coord_X_b2),
-        .data_out_y_b (coord_Y_b2)
+        .data_out1 (coord_X_b2),
+        .data_out2 (coord_Y_b2)
     );
     
     // DUT: inv_LUT

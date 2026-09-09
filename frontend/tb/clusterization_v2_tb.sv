@@ -13,7 +13,7 @@
 // ARCHITECTURE.md section 10), not the plain behavioral memories.
 //=============================================================================
 
-module clusterization_tb #(
+module clusterization_v2_tb #(
     parameter int NB_POINTS    = 1250,        // Number of points
     parameter int NB_ITER      = 50,          // Number of iterations
     parameter int COORD_W      = 16,          // Coordinate width

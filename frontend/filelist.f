@@ -32,5 +32,3 @@ tb/cluster_assign_tb.sv
 tb/act_coord_tb.sv
 tb/norm_entropy_grad_tb.sv
 tb/dist_mat_arg_exp_tb.sv
-
-tb/clusterization_tb.sv

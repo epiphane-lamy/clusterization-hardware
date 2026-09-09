@@ -25,7 +25,7 @@ export period_clk = $(PERIOD_CLK)
 #-----------------------------------------------------------------------------
 # General design dependent variables
 #-----------------------------------------------------------------------------
-export DESIGNS = clusterization#full_step_cluster_v2#clusterization#full_step_cluster#full_step#step#act_coord#dist_mat_arg_exp#norm_entropy_grad#cluster_assign
+export DESIGNS = clusterization_v2#full_step_cluster_v2#clusterization#full_step_cluster#full_step#step#act_coord#dist_mat_arg_exp#norm_entropy_grad#cluster_assign
 export HDL_NAME = $(DESIGNS)
 export PROJECT_DIR := $(shell pwd)
 export BACKEND_DIR = $(PROJECT_DIR)/backend
@@ -228,10 +228,12 @@ endif
 # Xcelium (Frontend generic RTL simulation with filelist)
 RTL_FILELIST = $(PROJECT_DIR)/$(FRONTEND_DIR)/filelist.f
 RTL_FILELIST_BB = $(PROJECT_DIR)/$(FRONTEND_DIR)/filelist_bb.f
+RTL_FILELIST_BB_v2 = $(PROJECT_DIR)/$(FRONTEND_DIR)/filelist_bb_v2.f
 
 # Example of the corrected parameter syntax:
 XRUN_FLAGS    = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
 XRUN_FLAGS_BB = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST_BB) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
+XRUN_FLAGS_BB_v2 = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST_BB_v2) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
 # Genus (Synthesis flags)
 SYNTH_SCRIPT = ../scripts/synth.tcl
 GENUS_FLAGS = -abort_on_error -lic_startup Genus_Synthesis -lic_startup_options Genus_Physical_Opt -log genus_$(FREQ_MHZ)MHz_$(LIB_TYPE) -overwrite -f $(SYNTH_SCRIPT)
@@ -273,6 +275,9 @@ sim_rtl:
 
 sim_rtl_bb:
 	bash -l -c "module add $(XCELIUM_MOD) && cd $(FRONTEND_DIR) && xrun $(XRUN_FLAGS_BB)"
+
+sim_rtl_bb_v2:
+	bash -l -c "module add $(XCELIUM_MOD) && cd $(FRONTEND_DIR) && xrun $(XRUN_FLAGS_BB_v2)"
 
 synth:
 	@MATCHING_DIR=$$(find $(BACKEND_DIR)/synthesis/reports -maxdepth 1 -type d -name "$(DESIGNS)_$(LIB_TYPE)_$(FREQ_MHZ)_$(RUNTIME)" 2>/dev/null | head -n 1); \
