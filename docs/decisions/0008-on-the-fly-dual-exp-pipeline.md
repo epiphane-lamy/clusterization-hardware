@@ -29,7 +29,7 @@ Option 3. `ping_pong_arbiter` and both `P_ij` row buffers are removed entirely. 
 ## Consequences
 
 **Positive**
-- Removes roughly 480,000 µm² of buffer/arbiter area, replaced by an estimated ≈20,000 µm² of duplicated pipeline logic (≈10,000 µm² for the second `exp` compute pipeline, ≈10,000 µm² for the second `exp_LUT` read port) — pending confirmation from a full synthesis/P&R run of the v2 design (see `docs/asic/RESULTS.md`).
+- Removes roughly 480,000 µm² of buffer/arbiter area, replaced by an estimated ≈20,000 µm² of duplicated pipeline logic (≈10,000 µm² for the second `exp` compute pipeline, ≈10,000 µm² for the second `exp_LUT` read port) — see the exact results from a full synthesis/P&R run of the v2 design (`docs/asic/RESULTS.md`).
 - Removes the 2048-point ceiling imposed by the `P_ij` macro wrapper's fixed depth (ADR-0007), since there is no `P_ij` memory macro left in the design at all.
 - Given memory's dominant share of total power (≈77.5%), removing this large memory block is expected to meaningfully reduce power as well — to be confirmed against a full power report for v2.
 - `grad` no longer needs its own control FSM, a significant simplification of its control logic compared to v1.

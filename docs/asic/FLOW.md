@@ -2,13 +2,15 @@
 
 Documents the RTL → GDSII flow followed for this design, using Cadence Genus for synthesis and Cadence Innovus for place-and-route, focusing on what changed compared to a "plain" digital flow once real memory macros entered the design (see [ADR-0007](../decisions/0007-memory-macro-wrappers.md) for why macros were introduced, and the `docs/blocks/*_mem_wrapper.md` files for the RTL-side wrapper changes this required).
 
+This methodology applies to both the v1 (ping-pong buffered, [ADR-0003](../decisions/0003-ping-pong-buffering.md)) and v2 (on-the-fly, [ADR-0008](../decisions/0008-on-the-fly-dual-exp-pipeline.md)) architectures — §6 covers what, if anything, changed specifically for v2.
+
 For final numbers (area, timing, power), see [`RESULTS.md`](RESULTS.md).
 
 ---
 
 ## 1. Overview
 
-The flow follows the standard stages — synthesis, floorplanning, placement, clock tree synthesis, routing, signoff — with two stages requiring specific attention because of the memory macros: **floorplanning** (macros are physically large, fixed-shape black boxes that need to be placed deliberately, not left to automatic standard-cell placement) and **area/density tuning** (covered in §3).
+The flow follows the standard stages — synthesis, floorplanning, placement, clock tree synthesis, routing, signoff — with two stages requiring specific attention because of the memory macros: **floorplanning** (macros are physically large, fixed-shape black boxes that need to be placed deliberately, not left to automatic standard-cell placement) and **area/density tuning** (covered in §5).
 
 ## 2. Macro floorplanning
 
@@ -37,20 +39,20 @@ Macros are surrounded by placement halos — keep-out margins where Innovus is n
 
 Before assuming any custom power-routing work would be needed for the macros, this was explicitly checked: it turned out **not** to be necessary — the power connections for both macros are already integrated into the black-box view via their `.lib`/`.lef` deliverables, and the standard power routing flow handles them like any other cell.
 
-## 5. Area and routing-density tuning
+## 5. Area and routing-density tuning (v1)
 
-The first full P&R pass used an automatically sized floorplan (Innovus's own default sizing), which left a large amount of unused free space and resulted in a very low routing density (**~7%**). This became the starting point for a manual optimization pass:
+The first full P&R pass (`v0.0`) used an automatically sized floorplan (Innovus's own default sizing), which left a large amount of unused free space and resulted in a very low routing density (**~7%**). This became the starting point for a manual optimization pass:
 
 1. **Shrink the core area manually.** Rather than trust the automatic sizing, the die/core dimensions were reduced by hand once the first P&R pass confirmed the design was functionally complete and timing-clean, to remove the excess free space.
 2. **Re-adjust pin placement.** Shrinking the floorplan moved the macros closer together, which meant the pin locations found in §2.3 had to be revisited so pins still landed in a routable gap between macros rather than getting swallowed by a macro footprint.
-3. **Iterate on density while watching timing.** With the floorplan tightened, routing density rose from ~7% toward much higher values. Density was pushed up step by step, checking setup/hold timing after each iteration: setup timing kept passing comfortably as density increased, but hold slack degraded further each time. The final floorplan settled on a density of **74.538%** — the point found to be a good compromise between a small, cost-effective die area and keeping timing (particularly hold) within an acceptable margin. See `RESULTS.md` for the exact area/timing/power numbers of this final iteration compared to the initial, loosely-floorplanned one.
+3. **Iterate on density while watching timing.** With the floorplan tightened, routing density rose from ~7% toward much higher values. Density was pushed up step by step, checking setup/hold timing after each iteration: setup timing kept passing comfortably as density increased, but hold slack degraded further each time. The final floorplan (`v1.10`) settled on a density of **74.538%** — the point found to be a good compromise between a small, cost-effective die area and keeping timing (particularly hold) within an acceptable margin. See `RESULTS.md` for the exact area/timing/power numbers of this final iteration compared to the initial, loosely-floorplanned one.
 
 The effect of this pass is visible directly in the layout views. **Amoeba view** (colors the floorplan by owning block) makes the core-area shrink from step 1 obvious — the same macros, the same logic, packed into a visibly smaller die:
 
 <table>
 <tr>
-<td width="50%"><img src="img/floorplan_amoeba_view_1.png" alt="Amoeba view, unoptimized floorplan (v0)"><br><sub>Before — <code>v0</code>, automatically sized floorplan, ~7% density</sub></td>
-<td width="50%"><img src="img/floorplan_amoeba_view_2.png" alt="Amoeba view, optimized floorplan (v10)"><br><sub>After — <code>v10</code>, manually tightened floorplan, 74.538% density</sub></td>
+<td width="50%"><img src="img/floorplan_amoeba_view_1.png" alt="Amoeba view, unoptimized floorplan (v0.0)"><br><sub>Before — <code>v0.0</code>, automatically sized floorplan, ~7% density</sub></td>
+<td width="50%"><img src="img/floorplan_amoeba_view_2.png" alt="Amoeba view, optimized floorplan (v1.10)"><br><sub>After — <code>v1.10</code>, manually tightened floorplan, 74.538% density</sub></td>
 </tr>
 </table>
 
@@ -58,11 +60,25 @@ The effect of this pass is visible directly in the layout views. **Amoeba view**
 
 <table>
 <tr>
-<td width="50%"><img src="img/floorplan_congestion_view_1.png" alt="Congestion view, unoptimized floorplan (v0)"><br><sub>Before — <code>v0</code>, ~7% density</sub></td>
-<td width="50%"><img src="img/floorplan_congestion_view_2.png" alt="Congestion view, optimized floorplan (v10)"><br><sub>After — <code>v10</code>, 74.538% density</sub></td>
+<td width="50%"><img src="img/floorplan_congestion_view_1.png" alt="Congestion view, unoptimized floorplan (v0.0)"><br><sub>Before — <code>v0.0</code>, ~7% density</sub></td>
+<td width="50%"><img src="img/floorplan_congestion_view_2.png" alt="Congestion view, optimized floorplan (v1.10)"><br><sub>After — <code>v1.10</code>, 74.538% density</sub></td>
 </tr>
 </table>
 
-## 6. Verification
+## 6. Floorplan for v2 (ADR-0008)
+
+The flow itself is unchanged from §1–§4 above. The only structural difference is the floorplan's macro count: removing the two `P_ij` ping-pong buffers and the arbiter ([ADR-0008](../decisions/0008-on-the-fly-dual-exp-pipeline.md)) leaves only **4 macros** to place interactively (§2.1) instead of 6 — `coord_memory_b1`, `coord_memory_b2`, `upd_memory`, and `memory_cluster`. Placement strategy, halo widths, and pin-placement approach are otherwise identical to §2–§4.
+
+**`v2.0`** is the first full P&R pass on this reduced macro set:
+
+<table>
+<tr>
+<td width="50%"><img src="img/floorplan_amoeba_view_v2_0.png" alt="Amoeba view, v2.0 floorplan"><br><sub><code>v2.0</code> — first full P&R pass on the reduced (4-macro) floorplan</sub></td>
+</tr>
+</table>
+
+Congestion views are not included yet for v2 either: the interesting question — whether removing two large macros lets density be pushed higher than v1's 74.538% without degrading hold further — can only be answered once that density-optimization pass exists. To be added alongside the `v2.x` floorplan above.
+
+## 7. Verification
 
 Alongside the ASIC-specific flow changes above, the full clustering pipeline was resimulated in RTL with the behavioral memories replaced by the macro-backed wrappers, to confirm the wrappers behave correctly before trusting them through synthesis and P&R (see `docs/blocks/coord_mem_wrapper.md`, `pij_mem_wrapper.md`, and `cluster_mem_wrapper.md` for the wrapper-level details).

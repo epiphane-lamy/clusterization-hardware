@@ -276,7 +276,7 @@ module dist_mat_arg_exp_v2 #(
     // Latch K_step at the start of the step; held constant for the whole sweep
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) K_step_r <= '0;
-        else if (current_state == S_IDLE && start) K_step_r <= K_rom[step_idx];
+        else if (current_state == S_IDLE && start) K_step_r <= K_step_value;
     end
  
 
