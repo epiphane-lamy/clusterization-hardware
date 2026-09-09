@@ -1,5 +1,5 @@
 //=============================================================================
-// Module: dist_mat_arg_exp  ("exp block")
+// Module: dist_mat_arg_exp  ("exp block", v1)
 //
 // Streams one row of the unnormalized Gaussian-kernel similarity matrix P
 // per sweep. For a fixed reference point i, computes the squared distance to

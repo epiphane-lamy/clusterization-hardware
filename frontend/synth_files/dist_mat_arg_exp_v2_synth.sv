@@ -1,37 +1,48 @@
 //=============================================================================
-// Module: dist_mat_arg_exp_v2  ("exp block")
+// Module: dist_mat_arg_exp_v2  ("exp block", v2)
 //
 // This module is the synthesizable version of the dist_mat_arg_exp_v2 module.
 // It includes, in particular, a synthesizable ROM, unlike the dist_mat_arg_exp_v2
 // module used for RTL simulation, whose ROM contents are preloaded using the
 // readmemh directive.
 //
-// Streams one row of the unnormalized Gaussian-kernel similarity matrix P
-// per sweep. For a fixed reference point i, computes the squared distance to
-// every other point j, scales it by the precomputed K_step factor, and looks
-// up the resulting argument in a LUT to produce P_ij = exp(arg_ij). The row
-// is never buffered in full on this side: P_ij is produced and forwarded
-// downstream (through the ping-pong arbiter, see ADR-0003) one coefficient
-// per cycle, together with a running row sum used later for normalization
-// by the grad block (see docs/ARCHITECTURE.md, section 6).
+// Streams the unnormalized Gaussian-kernel similarity matrix P directly to
+// grad_v2, one coefficient per cycle, with NO row buffer in between --
+// unlike v1 (dist_mat_arg_exp), which wrote each row into a ping-pong
+// buffer for grad to read back (see ADR-0003). This implements ADR-0008.
 //
-// Both the reference point i and its neighbours j are read from the same
-// single read-port coordinate BRAM, with address multiplexing between the
-// "fetch i" and "stream j" phases (see the FSM below).
+// Normalizing a row still requires its full sum before any coefficient in
+// it can be normalized, and that sum is only known once every coefficient
+// has been produced -- so instead of buffering the row (v1's answer), this
+// version computes each row TWICE, on two identical compute pipelines
+// running exactly one pass apart:
+//   - the SUM pipeline computes sum_row_P for the CURRENT pass's row,
+//     using a freshly fetched reference point;
+//   - the P_ij pipeline forwards the REAL coefficients for the PREVIOUS
+//     pass's row, using that row's reference point (held one pass longer
+//     in a second register stage), by which point its sum has already
+//     been computed and forwarded to grad_v2.
+// This keeps total latency at NB_POINTS+1 passes instead of the 2*NB_POINTS
+// a naive "compute every row twice, sequentially" approach would cost.
+// See docs/blocks/exp_block_v2.md section 2 for the full row-offset
+// explanation and a pass-by-pass table.
 //
-// Flow control: once a full row has been produced, the block waits for
-// credit_avail before starting the next row -- this is how the ping-pong
-// arbiter signals that the destination buffer is free to write into
-// (see ADR-0003).
+// Both point i and its neighbours j are still read from a single shared
+// coordinate BRAM port -- only the compute pipeline and the exp_LUT read
+// port are duplicated, not the coordinate memory access itself.
 //
 // Related design decisions:
 //   ADR-0001 - fixed-point quantization chain
 //   ADR-0002 - row-streaming instead of storing the full P matrix
-//   ADR-0003 - ping-pong buffering / credit-based flow control
+//   ADR-0003 - v1's ping-pong buffering (superseded here by ADR-0008)
 //   ADR-0004 - LUT-based exp() instead of CORDIC
+//   ADR-0008 - on-the-fly row processing / duplicated exp pipeline (this module)
 //
-// See docs/blocks/exp_block.md for the full block-level documentation.
+// See docs/blocks/exp_block_v2.md for the full delta documentation, and
+// docs/blocks/exp_block.md for everything unchanged from v1 (per-stage
+// pipeline math, quantization formats, LUT saturation behavior).
 //=============================================================================
+
 
 
 module dist_mat_arg_exp_v2 #(
@@ -58,16 +69,16 @@ module dist_mat_arg_exp_v2 #(
     input  logic [COORD_W-1:0] coord_Y,
 
     // --- exp LUT port: exp_lut[index = arg + 10240] ---
-    output logic [ADDR_LUT_EXP-1:0] index_LUT_exp,
+    output logic [ADDR_LUT_EXP-1:0] index_LUT_exp,     // P_ij pipeline
     input  logic [COORD_W-1:0]      result_exp,
-    output logic [ADDR_LUT_EXP-1:0] index_LUT_exp_sum,
+    output logic [ADDR_LUT_EXP-1:0] index_LUT_exp_sum, // sum pipeline
     input  logic [COORD_W-1:0]      result_exp_sum,
 
-	// --- Output to the ping-pong arbiter / grad block ---
-    output logic [P_IJ_W - 1:0]    P_ij,       // exp(arg_ij), saturated to 0 if arg out of LUT range
+	// --- Output to grad_v2 (no arbiter in between, see ADR-0008) ---
+    output logic [P_IJ_W - 1:0]    P_ij,      // exp(arg_ij), saturated to 0 if arg out of LUT range
     output logic [ADDR_P_IJ_W-1:0] out_i,
     output logic [ADDR_P_IJ_W-1:0] out_j,
-    output logic [ADDR_P_IJ_W-1:0] out_i_sum,
+    output logic [ADDR_P_IJ_W-1:0] out_i_sum, // Row/column the just-completed sum_row_P belongs to
     output logic [ADDR_P_IJ_W-1:0] out_j_sum,
     output logic                   valid_out,
 
@@ -164,6 +175,12 @@ module dist_mat_arg_exp_v2 #(
 
     assign issue_i = (current_state == S_FETCH_I);
 
+
+    // The P_ij pipeline forwards row (cnt_i - 1), so it has nothing to do on
+    // the very first pass (cnt_i == 0, no "row -1"). The sum pipeline
+    // computes row cnt_i, so it has nothing to do on the extra final pass
+    // (cnt_i == NB_POINTS, every row already has a sum by then). See
+    // docs/blocks/exp_block_v2.md section 2 for the full pass-by-pass table.
     assign issue_j     = ((current_state == S_FETCH_WAIT) || (current_state == S_RUN)) && (cnt_i != 0);
     assign issue_j_sum = ((current_state == S_FETCH_WAIT) || (current_state == S_RUN)) && (cnt_i != NB_POINTS);
 
@@ -201,9 +218,11 @@ module dist_mat_arg_exp_v2 #(
                 end
 
                 S_LAST_WAIT: begin
-                    // credit_avail gates the row increment: cnt_i must not advance
-                    // until the ping-pong arbiter confirms the destination buffer
-                    // is free (see ADR-0003).
+                    // Unconditional advance -- no credit/flow-control wait
+                    // here anymore (v1's ping-pong buffer, and the
+                    // credit_avail signal that protected it, are both gone,
+                    // see ADR-0008). Runs through cnt_i == NB_POINTS once,
+                    // for the extra final pass (see docs/blocks/exp_block_v2.md).
                     if ((cnt_i != NB_POINTS))
                         cnt_i <= cnt_i + 1'b1;
                 end
@@ -235,6 +254,11 @@ module dist_mat_arg_exp_v2 #(
             S_FETCH_I    : next_state = S_FETCH_WAIT;
             S_FETCH_WAIT : next_state = S_RUN;
             S_RUN        : next_state = (cnt_j == NB_POINTS - 1) ? S_LAST_WAIT : S_RUN;
+            // cnt_i here is still the PRE-increment value for this pass (the
+            // increment above happens the same cycle); reaching S_DRAIN only
+            // once cnt_i was already NB_POINTS means the extra final pass
+            // (cnt_i == NB_POINTS) still runs through S_FETCH_I once more
+            // before draining.
             S_LAST_WAIT  : next_state = (cnt_i == NB_POINTS) ? S_DRAIN : S_FETCH_I;
             S_DRAIN      : next_state = (drain_cnt == PIPE_DEPTH - 1) ? S_DONE : S_DRAIN;
             S_DONE       : next_state = S_IDLE;
@@ -252,7 +276,7 @@ module dist_mat_arg_exp_v2 #(
     // Latch K_step at the start of the step; held constant for the whole sweep
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) K_step_r <= '0;
-        else if (current_state == S_IDLE && start) K_step_r <= K_step_value;
+        else if (current_state == S_IDLE && start) K_step_r <= K_rom[step_idx];
     end
  
 
@@ -262,8 +286,8 @@ module dist_mat_arg_exp_v2 #(
     // BRAM response aligned with the (i, j) pair it corresponds to.
     // -------------------------------------------------------------------
     logic              i_capture_d;   // 1: the BRAM response this cycle is the i-fetch
-    logic              j_valid_d;     // 1: the BRAM response this cycle is a valid j-fetch for computing P_ij
-    logic              j_valid_d_sum; // 1: the BRAM response this cycle is a valid j-fetch for computing P_ij sum
+    logic              j_valid_d;     // 1: the BRAM response this cycle is a valid j-fetch for the P_ij pipeline
+    logic              j_valid_d_sum; // 1: the BRAM response this cycle is a valid j-fetch for the sum pipeline
     logic [ADDR_W-1:0] j_idx_d;       // j index matching the response on the bus
     logic [ADDR_W-1:0] i_idx_d;
 
@@ -284,10 +308,14 @@ module dist_mat_arg_exp_v2 #(
     end
 
     // -------------------------------------------------------------------
-    // Latch coord_X_i_sum / coord_Y_i_sum once per row (reference point
-    // coordinates) to compute the row sum.
-    // Latch coord_X_i / coord_Y_i from previous reference point coordinates
-    // (to compute the P_ij row), held stable while j streams across the row.
+    // Two-deep coordinate shift register for the reference point:
+    //   coord_X_i_sum/coord_Y_i_sum <- freshly fetched this pass (point cnt_i),
+    //     used by the SUM pipeline for row cnt_i.
+    //   coord_X_i/coord_Y_i         <- what coord_X_i_sum held LAST pass
+    //     (point cnt_i - 1), used by the P_ij pipeline for row cnt_i - 1.
+    // This one-pass delay is exactly what lets the P_ij pipeline forward a
+    // row using its reference point one pass after the sum pipeline first
+    // fetched it (see docs/blocks/exp_block_v2.md section 2).
     // -------------------------------------------------------------------
     logic [COORD_W-1:0] coord_X_i, coord_Y_i;
     logic [COORD_W-1:0] coord_X_i_sum, coord_Y_i_sum;
@@ -302,9 +330,11 @@ module dist_mat_arg_exp_v2 #(
     end
 
 
+ 
 // -------------------------------------------------------------------
-// Compute pipeline producing P_ij (8 stages, one register stage per cycle).
-// See docs/blocks/exp.md section 4 for the full stage-by-stage description.
+// Compute pipeline forwarding the real P_ij coefficients, for row
+// (cnt_i - 1). Identical stage-by-stage structure to v1's single pipeline
+// -- see docs/blocks/exp_block.md section 4 for the full description.
 // -------------------------------------------------------------------
     logic signed [COORD_W:0]   dx, dy;
     logic [ADDR_W-1:0]         i_1, j_1;
@@ -414,9 +444,13 @@ module dist_mat_arg_exp_v2 #(
     assign index_LUT_exp = arg_shifted[ADDR_LUT_EXP - 1:0];
 
 
+
 // -------------------------------------------------------------------
-// Compute pipeline producing sum_row_P (8 stages, one register stage per cycle).
-// See docs/blocks/exp.md section 4 for the full stage-by-stage description.
+// Compute pipeline producing sum_row_P for the CURRENT pass's row
+// (cnt_i). Structurally identical to the P_ij pipeline above -- its
+// per-coefficient output (P_ij_sum) is intentionally never exposed as a
+// module output; only the accumulated sum_row_P (below) is consumed
+// downstream. See docs/blocks/exp_block.md section 4 for the stage detail.
 // -------------------------------------------------------------------
     logic signed [COORD_W:0]   dx_sum, dy_sum;
     logic [ADDR_W-1:0]         i_1_sum, j_1_sum;
@@ -561,4 +595,3 @@ module dist_mat_arg_exp_v2 #(
     end
 
 endmodule
-
