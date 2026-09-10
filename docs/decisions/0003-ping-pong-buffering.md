@@ -1,7 +1,7 @@
 # ADR-0003 — Double buffering (ping-pong) between `exp` and `grad`, and duplication of coordinate memories
 
 ## Status
-Accepted
+Superseded by [ADR-0008](0008-on-the-fly-dual-exp-pipeline.md) — retained here as the v1 solution
 
 ## Context
 Following [ADR-0002](0002-single-row-streaming-vs-full-matrix.md), `P` is processed row by row through a shared buffer memory between `exp` (producer) and `grad` (consumer). A strictly sequential flow using a single row memory (exp writes → grad reads → exp writes again) introduces significant idle time: each block must wait for the other to finish before starting its own access.
