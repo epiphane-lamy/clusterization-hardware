@@ -15,9 +15,11 @@ HALF_PERIOD_PS := $(shell awk "BEGIN {printf \"%d\", 1000000.0 / (2 * $(CLEAN_FR
 # Set wait times scaling with the frequency (assuming WAIT_TIME is 1/2 of Period in ns as a base, multiplied by scaling factor)
 WAIT_TIME_NS := $(shell awk "BEGIN {printf \"%d\", 500000.0 / $(CLEAN_FREQ)}")
 
-# Calculate exact runtime required for VCD generation based on frequency (1604500 base + 101ns buffer for rounding)
-CALC_RUNTIME := $(shell awk "BEGIN {printf \"%d\", (1604500.0 / $(CLEAN_FREQ)) + 101}")
-CALC_RUNTIME2 := $(shell awk "BEGIN {printf \"%d\", ((1604500.0 / $(CLEAN_FREQ)) + 101) * 2}")
+# Runtime measured at 100 MHz for 1250 points / 50 iterations
+CALC_RUNTIME := $(shell awk "BEGIN {printf \"%d\", (801490480.0 * 100.0 / $(CLEAN_FREQ)) + 100000}")
+CALC_RUNTIME2 := $(shell awk "BEGIN {printf \"%d\", ((801490480.0 * 100.0 / $(CLEAN_FREQ)) + 100000) * 2}")
+
+
 
 # Export the calculated period so variables.tcl and SDC files can read it
 export period_clk = $(PERIOD_CLK)
@@ -36,7 +38,7 @@ export SCRIPT_DIR = $(BACKEND_DIR)/synthesis/scripts
 export LAYOUT_DIR = $(BACKEND_DIR)/layout
 
 
-export RTL_FILES = $(DESIGNS).vhd
+export RTL_FILES = $(DESIGNS).sv
 export VLOG_LIST = $(BACKEND_DIR)/synthesis/deliverables/$(DESIGNS).v $(BACKEND_DIR)/synthesis/deliverables/$(DESIGNS)_io.v $(BACKEND_DIR)/synthesis/deliverables/$(DESIGNS)_chip.v
 
 #-----------------------------------------------------------------------------
@@ -174,6 +176,7 @@ export BOTTOM_CORE_PINS = \
 # Directories & Modules
 #-----------------------------------------------------------------------------
 FRONTEND_DIR = frontend
+RAM_MODEL = $(PROJECT_DIR)/$(FRONTEND_DIR)/rtl/RAM_4096X32.sv
 HDL_TEMP_DIR = $(FRONTEND_DIR)/hdl_temp
 DUMP_DIR = $(FRONTEND_DIR)/simulation
 BACKEND_SYNTH_DIR = backend/synthesis/work
@@ -210,7 +213,7 @@ GUI_VCD ?= 0
 ifeq ($(GUI_VCD), 1)
 	GUI_FLAG_VCD = -gui
 else
-	GUI_FLAG_VCD = -input $(PROJECT_DIR)/frontend/generate_vcd.tcl
+	GUI_FLAG_VCD = -input $(PROJECT_DIR)/frontend/scripts/generate_vcd.tcl
 endif
 
 # --- Testbench Selection ---
@@ -219,7 +222,7 @@ endif
 VECT ?= 0
 ifeq ($(VECT), 1)
 	TB_MODULE_NAME = $(DESIGNS)_vect_tb
-	TB_MAIN_FILE = $(PROJECT_DIR)/$(FRONTEND_DIR)/$(TB_MODULE_NAME).sv
+	TB_MAIN_FILE = $(PROJECT_DIR)/$(FRONTEND_DIR)/tb/$(TB_MODULE_NAME).sv
 else
 	TB_MODULE_NAME = $(DESIGNS)_tb
 	TB_MAIN_FILE = $(PROJECT_DIR)/$(FRONTEND_DIR)/$(TB_MODULE_NAME).sv
@@ -233,7 +236,8 @@ RTL_FILELIST_BB_v2 = $(PROJECT_DIR)/$(FRONTEND_DIR)/filelist_bb_v2.f
 # Example of the corrected parameter syntax:
 XRUN_FLAGS    = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
 XRUN_FLAGS_BB = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST_BB) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
-XRUN_FLAGS_BB_v2 = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST_BB_v2) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
+#XRUN_FLAGS_BB_v2 = -clean -64bit -sv -v200x -v93 -f $(RTL_FILELIST_BB_v2) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
+XRUN_FLAGS_BB_v2 = -clean -64bit -sv -v200x -v93 -timescale 1ns/1ps -f $(RTL_FILELIST_BB_v2) -top $(TB_MODULE_NAME) -access +rwc ${GUI_FLAG} -defparam $(TB_MODULE_NAME).HALF_PERIOD_PS=$(HALF_PERIOD_PS) -defparam $(TB_MODULE_NAME).WAIT_TIME_NS=$(WAIT_TIME_NS)
 # Genus (Synthesis flags)
 SYNTH_SCRIPT = ../scripts/synth.tcl
 GENUS_FLAGS = -abort_on_error -lic_startup Genus_Synthesis -lic_startup_options Genus_Physical_Opt -log genus_$(FREQ_MHZ)MHz_$(LIB_TYPE) -overwrite -f $(SYNTH_SCRIPT)
@@ -341,7 +345,7 @@ sim_gls_monitor: sim_rtl
 			$(TOP_MODULE) \
 			$(SDF_CMD)"
 
-sim_gls_vcd: sim_rtl
+sim_gls_vcd: sim_rtl_bb_v2
 	@mkdir -p $(DUMP_DIR)
 	@mkdir -p $(CSVS_DIR)
 	@echo "Generating dynamic SDF command file..."
@@ -356,6 +360,7 @@ sim_gls_vcd: sim_rtl
 			xrun $(XRUN_GLS_VCD_FLAGS) \
 			$(TECH_V_LIB) \
 			$(NETLIST_FILE) \
+			$(RAM_MODEL) \
 			$(TB_FILES) \
 			$(TOP_MODULE) \
 			$(SDF_CMD)"

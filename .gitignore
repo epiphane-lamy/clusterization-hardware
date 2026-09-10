@@ -1,6 +1,9 @@
 # Work directories
 **/work/
 
+# VCD directory
+frontend/VCDs/
+
 # Deliverable directories
 **/deliverables/
 
@@ -17,6 +20,9 @@ clusterization.geom.rpt
 clusterization.geom.rpt.old
 clusterization_v2.geom.rpt
 clusterization_v2.geom.rpt.old
+
+frontend/clusterization_v2.sdf.X
+frontend/sdf.log
 
 # Work directories
 frontend/src_c/clusterization

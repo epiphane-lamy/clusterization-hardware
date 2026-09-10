@@ -1,4 +1,4 @@
-# frontend/generate_vcd.tcl
+# frontend/scripts/generate_vcd.tcl
 
 set freq $::env(FREQ_MHZ)
 set lib  $::env(LIB_TYPE)
@@ -9,11 +9,11 @@ if {$runtime <= 0} {
 }
 
 # 1. Open a VCD database with a dynamic name
-database -open -vcd vcd_db -into VCDs/counter_${lib}_${freq}_${runtime}.vcd
+database -open -vcd vcd_db -into VCDs/clusterization_v2_${lib}_${freq}_${runtime}.vcd
 
 # 2. Probe all signals within the instantiated synthesized module (DUV)
 #probe -create -database vcd_db {DUV} -all -depth all
-probe -create -database vcd_db {counter_tb} -all -depth all
+probe -create -database vcd_db {clusterization_v2_vect_tb} -all -depth all
 
 # 3. Run the simulation
 run ${runtime}ns

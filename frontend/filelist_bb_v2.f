@@ -20,3 +20,4 @@ rtl/dist_mat_arg_exp_v2.sv
 rtl/exp_LUT_v2.sv
 
 tb/clusterization_v2_tb.sv
+tb/clusterization_v2_vect_tb.sv
