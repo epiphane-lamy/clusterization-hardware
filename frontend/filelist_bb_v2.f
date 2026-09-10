@@ -9,8 +9,8 @@ rtl/clusterization_pkg.sv
 rtl/clusterization_v2.sv
 
 rtl/RAM_4096X32.sv
-synth_files/memory_dual_port_synth.sv
-synth_files/memory_cluster_synth.sv
+synth_files/memory_dual_port_v2_synth.sv
+synth_files/memory_cluster_v2_synth.sv
 
 rtl/cluster_assign.sv
 rtl/act_coord.sv

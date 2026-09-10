@@ -180,6 +180,7 @@ module clusterization_v2 #(
     );
 
     // memory access
+    logic               cen_coord_b1;
     logic               we_coord_b1;
     logic [COORD_W-1:0] data_in1_coord_b1;
     logic [COORD_W-1:0] data_in2_coord_b1;
@@ -192,6 +193,7 @@ module clusterization_v2 #(
         .clk       (clk),
         .rst_n     (rst_n),
 
+        .cen       (cen_coord_b1),
         .we        (we_coord_b1),
         .addr      (addr_coord_b1),
         .data_in1  (data_in1_coord_b1),
@@ -281,6 +283,7 @@ module clusterization_v2 #(
         .done            (done_b2)
     );
 
+    logic               cen_coord_b2;
     logic               we_coord_b2;
     logic [COORD_W-1:0] data_in1_coord_b2;
     logic [COORD_W-1:0] data_in2_coord_b2;
@@ -295,6 +298,7 @@ module clusterization_v2 #(
         .clk       (clk),
         .rst_n     (rst_n),
 
+        .cen       (cen_coord_b2),
         .we        (we_coord_b2),
         .addr      (addr_coord_b2),
         .data_in1  (data_in1_coord_b2),
@@ -370,6 +374,7 @@ module clusterization_v2 #(
     // act_coord only ever reads it back afterwards, once grad's phase for
     // the iteration has fully finished -- see the addr_act mux below for
     // how the two blocks' accesses are time-multiplexed on this same port.
+    logic               cen_upd;
     memory_dual_port #(
         .ADDR_W    (ADDR_W),
         .DATA_W    (ACT_W)
@@ -377,6 +382,7 @@ module clusterization_v2 #(
         .clk       (clk),
         .rst_n     (rst_n),
 
+        .cen       (cen_upd),
         .we        (valid_out_b2),
         .addr      (addr_act),
         .data_in1  (mult_act_X),
@@ -400,6 +406,7 @@ module clusterization_v2 #(
     // --- Cluster memory port ---
     logic [ADDR_W-1:0] addr_cluster;
     logic [ADDR_W-1:0] addr_cluster_compute;
+    logic              cen_cluster;
     logic              we_cluster;
     logic              valid_cluster;
     logic [ADDR_W-1:0] cluster_out;
@@ -436,6 +443,7 @@ module clusterization_v2 #(
         .clk           (clk),
         .rst_n         (rst_n),
 
+        .cen           (cen_cluster),
         .we            (we_cluster),
         .addr          (addr_cluster),
         .data_in       (cluster_out),
@@ -632,6 +640,60 @@ module clusterization_v2 #(
 
 
     // -------------------------------------------------------------------
+    // Gating of memory macros
+    // -------------------------------------------------------------------
+
+    // Register for the coord_memory_b2 busy state
+    logic pending_cen_b1;
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            pending_cen_b1 <= 1'b0;
+        end else if (start) begin
+            pending_cen_b1 <= 1'b1;
+        end else if (done) begin
+            pending_cen_b1 <= 1'b0;
+        end
+    end
+
+    // cen_coord_b1 is high during the computation and when we_coord_load
+    assign cen_coord_b1 = pending_cen_b1 | start | we_coord_load;
+
+
+    // Register for the coord_memory_b2 busy state
+    logic pending_cen_b2;
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            pending_cen_b2 <= 1'b0;
+        end else if (start) begin
+            pending_cen_b2 <= 1'b1;
+        end else if (all_steps_done) begin
+            pending_cen_b2 <= 1'b0;
+        end
+    end
+
+    // cen_coord_b2 is high during the computation and when we_coord_load
+    assign cen_coord_b2 = pending_cen_b2 | start | we_coord_load;
+    assign cen_upd      = pending_cen_b2 | start;
+
+    // Register for the coord_memory_b2 busy state
+    logic pending_cen_cluster;
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            pending_cen_cluster <= 1'b0;
+        end else if (all_steps_done) begin
+            pending_cen_cluster <= 1'b1;
+        end else if (start) begin
+            pending_cen_cluster <= 1'b0;
+        end
+    end
+
+    assign cen_cluster = pending_cen_cluster | all_steps_done;
+
+
+    // -------------------------------------------------------------------
     // Debug print block -- simulation only, ignored by synthesis. Traces
     // the pipeline's key intermediate results (row sums, entropy,
     // mult_act, coordinate updates) as they're produced.
@@ -672,5 +734,32 @@ module clusterization_v2 #(
         end
     end
 
+    int cnt_mem_b1;
+    int cnt_mem_b2;
+    int cnt_mem_cluster;
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt_mem_b1 <= 0;
+        end else if (pending_cen_b1 | start) begin
+            cnt_mem_b1 <= cnt_mem_b1 + 1'b1;
+        end
+        if (done) $display("cnt_mem_b1=%0d", cnt_mem_b1+1);
+    end
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt_mem_b2 <= 0;
+        end else if (pending_cen_b2 | start) begin
+            cnt_mem_b2 <= cnt_mem_b2 + 1'b1;
+        end
+        if (done) $display("cnt_mem_b2=%0d", cnt_mem_b2+1);
+    end
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt_mem_cluster <= 0;
+        end else if (pending_cen_cluster | all_steps_done) begin
+            cnt_mem_cluster <= cnt_mem_cluster + 1'b1;
+        end
+        if (done) $display("cnt_mem_cluster=%0d", cnt_mem_cluster+1);
+    end
 
 endmodule
