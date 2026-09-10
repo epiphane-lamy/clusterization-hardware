@@ -1,34 +1,39 @@
 //=============================================================================
-// Module: norm_entropy_grad_v2  ("grad block")
+// Module: norm_entropy_grad_v2  ("grad block", v2)
 //
-// Consumes one row of P_ij (produced by the exp block, buffered through the
-// ping-pong arbiter) per sweep: normalizes each coefficient, accumulates the
-// weighted sum of neighbour coordinates (P_dot), derives the Ricci gradient
-// for the row's reference point, and applies the entropy-modulated update
-// force to produce mult_act_X/Y for the upd block. The Gini entropy of the
-// row (ADR-0005) is computed here too, as a byproduct of the same
-// normalized P_ij stream, and directly drives the "surgery" force
-// modulation (forca) applied to the same row's update.
+// Consumes P_ij directly from exp_v2, coefficient by coefficient, as it's
+// produced -- no row buffer, no arbiter, and no control FSM of its own
+// (unlike v1, norm_entropy_grad, which read a buffered row back through
+// ping_pong_arbiter, see ADR-0003). Implements the grad-side half of
+// ADR-0008.
 //
-// Row start is triggered by the exp block's sum_row_P / valid_sum_row_P /
-// out_i outputs (see docs/blocks/exp_block.md section 5), not through the
-// ping-pong arbiter -- the arbiter only mediates access to the P_ij data
-// itself (see docs/blocks/ping_pong_arbiter.md). A one-slot pending latch
-// (see the start_pulse logic below) makes sure a row-ready notification is
-// never lost if it arrives while this block is still finishing the
-// previous row.
+// Normalizes each P_ij on the fly, accumulates the weighted sum of
+// neighbour coordinates (P_dot), derives the Ricci gradient for the row's
+// reference point, and applies the entropy-modulated update force to
+// produce mult_act_X/Y for the upd block -- same math, same constants as
+// v1 (see docs/blocks/grad_block.md). The Gini entropy of the row
+// (ADR-0005) is computed here too, as a byproduct of the same normalized
+// P_ij stream.
 //
-// done (asserted once per row) feeds back into ping_pong_arbiter as
-// line_done_grad, releasing a ping-pong credit for the exp block
-// (see ADR-0003).
+// Row start is triggered by exp_v2's sum_row_P / valid_sum_row_P /
+// out_i_sum outputs (see docs/blocks/exp_block_v2.md section 2 for the
+// row-offset timing this depends on), not through an arbiter -- there is
+// no arbiter left in this architecture. Column position is tracked purely
+// from the incoming valid_P_ij stream (cnt_j), since exp_v2 pushes
+// coefficients rather than responding to read requests.
+//
+// done is now purely combinational (valid_out && last column), rather than
+// an FSM reaching a S_DONE state as in v1 -- there is no FSM here at all.
 //
 // Related design decisions: ADR-0001 (fixed-point quantization chain),
-// ADR-0002 (row streaming), ADR-0003 (ping-pong buffering), ADR-0004
-// (LUT-based inverse instead of CORDIC), ADR-0005 (Gini entropy instead
-// of Shannon).
+// ADR-0002 (row streaming), ADR-0003 (v1's ping-pong buffering, superseded
+// here by ADR-0008), ADR-0004 (LUT-based inverse instead of CORDIC),
+// ADR-0005 (Gini entropy instead of Shannon), ADR-0008 (on-the-fly row
+// processing / duplicated exp pipeline).
 //
-// See docs/blocks/grad_block.md for the full block-level documentation.
+// See docs/blocks/grad_block_v2.md for the full block-level documentation.
 //=============================================================================
+
 
 
 module norm_entropy_grad_v2 #(
@@ -52,7 +57,7 @@ module norm_entropy_grad_v2 #(
     input  logic [COORD_W-1:0] coord_X,
     input  logic [COORD_W-1:0] coord_Y,
  
-    // --- P_ij ---
+    // --- P_ij: pushed directly by exp_v2, no read request needed ---
     input  logic              valid_P_ij,
     input  logic [P_IJ_W-1:0] P_ij,
  
@@ -66,7 +71,7 @@ module norm_entropy_grad_v2 #(
     output logic [ADDR_P_IJ_W-1:0]  addr_act,
     output logic                    valid_out,
  
-    // --- Row-ready notification from the exp block ---
+    // --- Row-ready notification from exp_v2 ---
     input logic [SUM_ROW_P_W-1:0] sum_row_P,
     input logic [ADDR_W-1:0]      out_i_sum,       // Row index this sum applies to (and so the next P_ij applies to)
     input logic                   valid_sum_row_P, // Strobe: launches this row's processing
@@ -80,8 +85,13 @@ module norm_entropy_grad_v2 #(
     logic [ADDR_W-1:0] cnt_i;
     logic [ADDR_W-1:0] cnt_j;
 
+
     // -------------------------------------------------------------------
-    // j counter management
+    // j counter management: free-running from the incoming P_ij stream
+    // itself (no address request issued by this block -- exp_v2 pushes
+    // coefficients, see docs/blocks/grad_block_v2.md section 3). Wraps back to 0
+    // every NB_POINTS valid pulses, re-synchronizing to each new row
+    // without needing an explicit per-row reset.
     // -------------------------------------------------------------------
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -101,9 +111,9 @@ module norm_entropy_grad_v2 #(
     // Shift-register tags: independent of the current FSM state, derived
     // from which address was issued the previous cycle.
     // -------------------------------------------------------------------
-    logic              j_valid_d;     // 1: the BRAM response this cycle is a valid j-fetch
-    logic              j_valid_d_2;   // 1: the BRAM response this cycle is a valid j-fetch
-    logic [ADDR_W-1:0] j_idx_d;       // j index matching the response on the bus
+    logic              j_valid_d;     // 1 register deep from valid_P_ij
+    logic              j_valid_d_2;   // 2 registers deep from valid_P_ij
+    logic [ADDR_W-1:0] j_idx_d;       // j index matching the response on the bus (1 register deep from cnt_j)
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -124,7 +134,13 @@ module norm_entropy_grad_v2 #(
 
 
     // -------------------------------------------------------------------
-    // Capture out_i / sum_row_P_i / coord_X_i / coord_Y_i
+    // Reference-point capture, triggered by valid_sum_row_P (see
+    // docs/blocks/grad_block_v2.md section 4). Two stages: valid_coord_i_1
+    // steers addr to cnt_i for one cycle to issue the fetch; valid_coord_i_2
+    // (the following cycle) captures the BRAM response through a small
+    // shift register (coord_X_i_next -> coord_X_i), mirroring the same
+    // "register the input once, then use it" pattern used in exp_v2's own
+    // reference-point capture.
     // -------------------------------------------------------------------
     logic               valid_coord_i_1, valid_coord_i_2;
     logic [COORD_W-1:0] coord_X_i, coord_Y_i;
@@ -132,7 +148,7 @@ module norm_entropy_grad_v2 #(
 
     logic [SUM_ROW_P_W-1:0] sum_row_P_i;
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             valid_coord_i_1 <= 1'b0;
             valid_coord_i_2 <= 1'b0;
@@ -142,16 +158,7 @@ module norm_entropy_grad_v2 #(
                 sum_row_P_i     <= sum_row_P;
                 cnt_i           <= out_i_sum-1; // Capture index row of the next P_ij line
                 valid_coord_i_1 <= 1'b1;
-                
-                $display("[%0t] ================= cnt_i=%0d",
-                        $time,
-                        cnt_i);
-                /*
-                if (cnt_i == 1) begin
-                    $finish;
-                end*/
             end
-
             valid_coord_i_2 <= valid_coord_i_1;
 
             if (valid_coord_i_2) begin
@@ -165,7 +172,15 @@ module norm_entropy_grad_v2 #(
 
 
     // -------------------------------------------------------------------
-    // inv[sum_row_P] address computation (mantissa-based, see ADR-0004)
+    // inv[sum_row_P] address computation (mantissa-based, see ADR-0004).
+    // Recomputed every cycle, unconditionally -- unlike v1, which only
+    // updated this during a dedicated S_COMPUTE_INV state. Since
+    // sum_row_P_i only actually changes once per row (see above), this
+    // settles to the correct value one cycle after a new row's sum arrives
+    // and then stays stable (redundantly recomputed) for the rest of the
+    // row -- functionally equivalent to v1, at the cost of some
+    // unnecessary switching activity now that there's no FSM state to gate
+    // it on (see docs/blocks/grad_block_v2.md section 5).
     // -------------------------------------------------------------------
     logic [$clog2(SUM_ROW_P_W)-1:0] msb_comb;
     logic [$clog2(SUM_ROW_P_W)-1:0] msb;
@@ -192,19 +207,23 @@ module norm_entropy_grad_v2 #(
 
 
     // -------------------------------------------------------------------
-    // Point / P_ij / update address generation
+    // Point / update address generation. addr is steered to cnt_i for the
+    // one cycle valid_coord_i_1 is high (reference-point fetch, see above),
+    // and to cnt_j (the free-running neighbour-column counter) otherwise.
+    // NOTE: this steal relies on landing during a genuine gap in the P_ij
+    // stream between exp_v2 passes rather than an explicit interlock -- see
+    // docs/blocks/grad_block_v2.md, callout box item 3.
     // -------------------------------------------------------------------
     logic [ADDR_W-1:0]  out_i;
-    assign addr = valid_coord_i_1 ? cnt_i : cnt_j;
+    assign addr     = valid_coord_i_1 ? cnt_i : cnt_j;
     assign addr_act = out_i;
  
 
+    // -------------------------------------------------------------------
+    // Compute pipeline. See docs/blocks/grad_block.md section 6 for the
+    // full stage-by-stage description (unchanged math from v1).
+    // -------------------------------------------------------------------
 
-    // -------------------------------------------------------------------
-    // Compute pipeline. See docs/blocks/grad_block.md section 6 for the full
-    // stage-by-stage description.
-    // -------------------------------------------------------------------
- 
     // Stage 0 -> 1: normalize P_ij into P_ij_norm; capture coord_X/coord_Y in lockstep
     logic [COORD_W - 1:0] P_ij_norm;
     logic [COORD_W-1:0]   coord_X_d, coord_Y_d;
@@ -251,14 +270,14 @@ module norm_entropy_grad_v2 #(
     
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            P_dot_X     <= '0;
-            P_dot_Y     <= '0;
-            P_dot_X_reg <= '0;
-            P_dot_Y_reg <= '0;
+            P_dot_X        <= '0;
+            P_dot_Y        <= '0;
+            P_dot_X_reg    <= '0;
+            P_dot_Y_reg    <= '0;
 
-            valid_1     <= 1'b0;
-            valid_2     <= 1'b0;
-            valid_grad  <= 1'b0;
+            valid_1        <= 1'b0;
+            valid_2        <= 1'b0;
+            valid_grad     <= 1'b0;
             valid_mult_act <= 1'b0;
             valid_out      <= 1'b0;
         end else begin
@@ -274,19 +293,9 @@ module norm_entropy_grad_v2 #(
             // Stage 1: P_ij_norm * coord
             mult_X  <= P_ij_norm * coord_X_d;
             mult_Y  <= P_ij_norm * coord_Y_d;
-            i_2       <= i_1;
+            i_2     <= i_1;
             j_2     <= j_1;
             valid_2 <= valid_1;
-/*
-            if (j_valid_d_2) begin
-            $display("[%0t] =================||||||| sum_row_P_inv=%0d",
-                    $time,
-                    sum_row_P_inv);
-            end
-            
-            if (j_1 == 10) begin
-                $finish;
-            end*/
             
             // Stage 2: P_dot accumulation
             if (valid_2) begin
@@ -306,14 +315,14 @@ module norm_entropy_grad_v2 #(
             end else begin
                 valid_grad <= 1'b0;
             end
-            i_3       <= i_2;
-            j_3        <= j_2;
+            i_3 <= i_2;
+            j_3 <= j_2;
 
             // Stage 3: grad_X and grad_Y (only on the row's last column)
             if (valid_grad && (j_3 == NB_POINTS-1)) begin
                 grad_X         <= $signed(P_dot_X[15:0]) - $signed({1'b0,coord_X_i});
                 grad_Y         <= $signed(P_dot_Y[15:0]) - $signed({1'b0,coord_Y_i});
-                i_4       <= i_3;
+                i_4            <= i_3;
                 j_4            <= j_3;
                 valid_mult_act <= valid_grad;
             end else begin
@@ -324,7 +333,7 @@ module norm_entropy_grad_v2 #(
             if (valid_mult_act) begin
                 mult_act_X <= (grad_X * forca_s) >>> 16;
                 mult_act_Y <= (grad_Y * forca_s) >>> 16;
-                out_i       <= i_4;
+                out_i      <= i_4;
                 out_j      <= j_4;
                 valid_out  <= valid_mult_act;
             end else begin
