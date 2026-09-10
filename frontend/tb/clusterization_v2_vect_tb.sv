@@ -88,8 +88,16 @@ module clusterization_v2_vect_tb #(
     // Clock Generation dynamically scaled by Makefile frequency
     initial begin
         half_period_ns = HALF_PERIOD_PS / 1000.0;
+
+        $display("========================================");
+        $display("Clock configuration");
+        $display("Frequency       : %0.3f MHz", 1000.0 / (half_period_ns * 2.0));
+        $display("Period          : %0.3f ns", half_period_ns * 2.0);
+        $display("Half period     : %0.3f ns", half_period_ns);
+        $display("========================================");
+
         clk = 1'b0;
-        forever #(half_period_ns) clk = ~clk; 
+        forever #(half_period_ns) clk = ~clk;
     end
 
     // Main Test Stimulus

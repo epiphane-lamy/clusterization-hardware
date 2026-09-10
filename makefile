@@ -366,7 +366,7 @@ sim_gls_vcd: sim_rtl_bb_v2
 			$(SDF_CMD)"
 			
 # Simulation for generation of the VCD after physical synthesis
-sim_post_layout: sim_rtl
+sim_post_layout: sim_rtl_bb_v2
 	@mkdir -p $(DUMP_DIR)
 	@mkdir -p $(CSVS_DIR)
 	@echo "Generating dynamic SDF command file..."
@@ -381,6 +381,7 @@ sim_post_layout: sim_rtl
 			xrun $(XRUN_POST_LAYOUT_FLAGS) \
 			$(TECH_V_LIB) \
 			$(NETLIST_FILE_POST_LAYOUT) \
+			$(RAM_MODEL) \
 			$(TB_FILES) \
 			$(TOP_MODULE) \
 			$(SDF_CMD)|| true"
