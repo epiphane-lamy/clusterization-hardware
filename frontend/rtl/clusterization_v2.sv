@@ -685,12 +685,13 @@ module clusterization_v2 #(
             pending_cen_cluster <= 1'b0;
         end else if (all_steps_done) begin
             pending_cen_cluster <= 1'b1;
-        end else if (start) begin
+        end else if (done) begin
             pending_cen_cluster <= 1'b0;
         end
     end
 
-    assign cen_cluster = pending_cen_cluster | all_steps_done;
+    // cen_cluster is high during the computation and when control_mem_cluster_read
+    assign cen_cluster = pending_cen_cluster | all_steps_done | control_mem_cluster_read;
 
 
     // -------------------------------------------------------------------
@@ -732,34 +733,6 @@ module clusterization_v2 #(
                     coord_X_act,
                     coord_Y_act);
         end
-    end
-
-    int cnt_mem_b1;
-    int cnt_mem_b2;
-    int cnt_mem_cluster;
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            cnt_mem_b1 <= 0;
-        end else if (pending_cen_b1 | start) begin
-            cnt_mem_b1 <= cnt_mem_b1 + 1'b1;
-        end
-        if (done) $display("cnt_mem_b1=%0d", cnt_mem_b1+1);
-    end
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            cnt_mem_b2 <= 0;
-        end else if (pending_cen_b2 | start) begin
-            cnt_mem_b2 <= cnt_mem_b2 + 1'b1;
-        end
-        if (done) $display("cnt_mem_b2=%0d", cnt_mem_b2+1);
-    end
-    always_ff @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            cnt_mem_cluster <= 0;
-        end else if (pending_cen_cluster | all_steps_done) begin
-            cnt_mem_cluster <= cnt_mem_cluster + 1'b1;
-        end
-        if (done) $display("cnt_mem_cluster=%0d", cnt_mem_cluster+1);
-    end
+    end    
 
 endmodule

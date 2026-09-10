@@ -112,8 +112,8 @@ read_hdl -sv {
     synth_files/inv_LUT_synth.sv
     synth_files/dist_mat_arg_exp_v2_synth.sv
     synth_files/exp_LUT_v2_synth.sv
-    synth_files/memory_dual_port_synth.sv
-    synth_files/memory_cluster_synth.sv
+    synth_files/memory_dual_port_v2_synth.sv
+    synth_files/memory_cluster_v2_synth.sv
 }
 
 
