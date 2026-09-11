@@ -64,6 +64,9 @@ One toplevel design point is worth noting here: the `memory cluster` associates 
 
 ## 4. Memory architecture of the iterative loop
 
+> **Note:** This section describes the original (v1) memory architecture — row-by-row streaming with ping-pong buffering (ADR-0003). It remains fully documented here because v1 stays buildable and simulatable independently of v2 (see the `_v2` naming convention used throughout `docs/blocks/`, `rtl/`, `tb/` and `synth_files/`). A second architecture, which removes the row buffering entirely, is described in §4bis.
+
+
 This is the technical core of the project. Three problems chain into each other, each solved by a specific architectural choice.
 
 ### 4.1 Storing only one row of `P` at a time
@@ -97,6 +100,24 @@ As `grad` computes the update contribution for each point, the results are accum
 ### 4.6 `P` row format
 
 Each row memory (A or B) holds `N` coefficients encoded on 16 bits in **Q0.16** format (normalized similarity values between 0 and 1).
+
+---
+
+## 4bis. Memory architecture of the iterative loop — v2 (on-the-fly, no row buffering)
+
+With the v2 architecture, the first step of the algorithm (the iterative loop) has been improved, while the second step (the final cluster assignment) remains unchanged.
+
+![Software reference architecture, part 1](img/archi_part1_v2.png)
+
+[ADR-0008](decisions/0008-on-the-fly-dual-exp-pipeline.md) replaces the entire mechanism described in §4.1–§4.3 (row buffering, ping-pong, and the flow control that coordinates it) with a different trade: rather than storing a row of `P` anywhere, `exp` computes every row **twice**, on two identical compute pipelines running exactly one pass apart — one pipeline produces a row's sum, the other forwards that same row's real coefficients one pass later, once the sum it needs is already known. `grad` consumes those coefficients live as they arrive, with no buffer and no read request of its own.
+
+This removes `ping_pong_arbiter` and both `P_ij` row buffers entirely — together the single largest contributor to area in v1 (see `docs/asic/RESULTS.md`) — at the cost of duplicating `exp`'s own compute pipeline and adding a second read port to `exp_LUT`. See [`exp_block_v2.md`](blocks/exp_block_v2.md) for the full row-offset mechanism and a pass-by-pass breakdown, and [`grad_block_v2.md`](blocks/grad_block_v2.md) for how `grad` was restructured to consume coefficients on the fly, without a control FSM of its own.
+
+The duplicated coordinate memories described in §4.3–§4.4 (one copy for `exp`, one for `grad`) are unchanged in v2 — merging them into a single true dual-port memory was considered and rejected on area grounds, see [ADR-0009](decisions/0009-single-dual-port-coord-memory-rejected.md).
+
+v2 also introduces chip-enable (`CEN`) gating on all four of its remaining memory macros (`coord_memory_b1`, `coord_memory_b2`, `upd_memory`, `memory_cluster`), each enabled only for the control-flow window in which it's actually needed rather than permanently — see [ADR-0010](decisions/0010-cen-gating-memory-macros.md) for the exact windows and the toplevel control signals (`start`, `all_steps_done`, `done`) driving them.
+
+See `docs/asic/RESULTS.md` for the measured area, timing, and power impact of v2 relative to v1.
 
 ---
 
