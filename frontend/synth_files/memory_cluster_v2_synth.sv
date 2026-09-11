@@ -11,7 +11,7 @@
 // macro is in the picture. See docs/blocks/cluster_mem_wrapper.md.
 //
 // This v2 version of the memory_cluster allows the memory to be gated using
-// the `cen` input.
+// the `cen` input. See ADR-0010.
 //
 //=============================================================================
 

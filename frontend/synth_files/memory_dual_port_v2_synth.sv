@@ -13,6 +13,8 @@
 // CEN/WEN mapping, and the read/write timing equivalence with the
 // behavioral model that this wrapper was resimulated against.
 //
+// This v2 version of the memory_cluster allows the memory to be gated using
+// the `cen` input. See ADR-0010.
 //=============================================================================
 
 module memory_dual_port #(

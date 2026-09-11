@@ -1,9 +1,9 @@
 //=============================================================================
-// Module: clusterization (toplevel)
+// Module: clusterization_v2 (toplevel)
 //
 // Instantiates and wires together the full clustering pipeline described in
-// docs/ARCHITECTURE.md: the exp/grad iterative loop (via the ping-pong
-// arbiter and its two P_ij buffers), the upd (act_coord) block that closes
+// docs/ARCHITECTURE.md (v2 architecture): the exp/grad iterative loop
+// (on-the-fly, no row buffering), the upd (act_coord) block that closes
 // out each iteration, and the final cluster_assign pass -- run NB_ITER
 // times before handing off to cluster assignment.
 //

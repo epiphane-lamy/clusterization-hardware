@@ -1,4 +1,17 @@
-
+//=============================================================================
+// Testbench: full_step_cluster_v2_tb
+//
+// Full-system testbench for the clusterization toplevel (v2 architecture):
+// loads a benchmark point set (produced by the fixed-point software reference
+// model, see docs/ARCHITECTURE.md section 8) into both duplicated coordinate
+// memories, runs the full pipeline to completion, and writes out the final
+// coordinates alongside their assigned cluster numbers for comparison
+// against the software reference (see the plotting scripts referenced in
+// the README).
+//
+// NOTE: this testbench targets the macro-backed build (make sim_rtl_bb, see
+// ARCHITECTURE.md section 10), not the plain behavioral memories.
+//=============================================================================
 
 module full_step_cluster_v2_tb #(
     parameter int NB_POINTS    = 1250,              // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
