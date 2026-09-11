@@ -81,8 +81,8 @@ check_floorplan
 #edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Bottom -layer 5 -spread_type range -start 803.0 0.0 -end 779.0 0.0 -pin $BOTTOM_CORE_PINS
 
 # pin for v2 architecture
-edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Left -layer 5 -spread_type range -start 0.0 920.0 -end 0.0 1090.0 -pin $LEFT_CORE_PINS
-edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Right -layer 5 -spread_type range -start 0.0 1090.0 -end 0.0 920.0 -pin $RIGHT_CORE_PINS
+edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Left -layer 5 -spread_type range -start 0.0 920.0 -end 0.0 1060.0 -pin $LEFT_CORE_PINS
+edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Right -layer 5 -spread_type range -start 0.0 1060.0 -end 0.0 920.0 -pin $RIGHT_CORE_PINS
 edit_pin -pin_width 0.08 -pin_depth 0.335 -fixed_pin 1 -fix_overlap 1 -spread_direction clockwise -side Bottom -layer 5 -spread_type range -start 400.0 0.0 -end 395.0 0.0 -pin $BOTTOM_CORE_PINS
 
 #----------------------------------------------------------------------------- 
