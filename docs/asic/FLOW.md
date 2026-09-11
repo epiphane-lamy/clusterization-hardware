@@ -77,7 +77,7 @@ The flow itself is unchanged from §1–§4 above. The only structural differenc
 </tr>
 </table>
 
-Congestion views are not included yet for v2 either: the interesting question — whether removing two large macros lets density be pushed higher than v1's 74.538% without degrading hold further — can only be answered once that density-optimization pass exists. To be added alongside the `v2.x` floorplan above.
+Then, a chip-area optimization was performed by increasing the placement density to **89.582%** for v2.3 (see `RESULTS.md`). This latest version also introduced a further power optimization, as it now includes memory gating (see [ADR-0010](../decisions/0010-cen-gating-memory-macros.md)).
 
 ## 7. Verification
 
