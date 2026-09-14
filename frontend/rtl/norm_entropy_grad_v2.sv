@@ -1,6 +1,11 @@
 //=============================================================================
 // Module: norm_entropy_grad_v2  ("grad block", v2)
 //
+// This module extends v2 by adding an input port for loading the NB_POINTS
+// constant at runtime. In v2, NB_POINTS was a compile-time parameter; in v3,
+// it is provided as an input so that the number of points can be configured
+// dynamically.
+//
 // Consumes P_ij directly from exp_v2, coefficient by coefficient, as it's
 // produced -- no row buffer, no arbiter, and no control FSM of its own
 // (unlike v1, norm_entropy_grad, which read a buffered row back through
@@ -37,7 +42,6 @@
 
 
 module norm_entropy_grad_v2 #(
-    parameter int NB_POINTS    = 8,   // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
     parameter int COORD_W      = 16,  // Coordinate width, signed fixed-point
     parameter int ADDR_W       = 7,   // Point address width (used for cnt_i / cnt_j / addr)
     parameter int P_IJ_W       = 16,  // P_ij width fixed-point
@@ -51,6 +55,13 @@ module norm_entropy_grad_v2 #(
     )(
     input  logic             clk,
     input  logic             rst_n,
+
+    // Added for v3 (see ADR-0011): nb_points is now loaded at runtime via
+    // NB_POINTS_LOADER instead of being a compile-time NB_POINTS parameter,
+    // letting the same fabricated chip process any benchmark up to its
+    // physical 4096-point capacity (ADR-0007), not only the exact point count
+    // it was synthesized for.
+    input  logic [11:0]      nb_points,
  
     // --- Grad-side point coordinate BRAM port ---
     output logic [ADDR_W-1:0]  addr,
@@ -98,7 +109,7 @@ module norm_entropy_grad_v2 #(
             cnt_j <= '0;
         end else begin
             if (valid_P_ij) begin
-                if (cnt_j == NB_POINTS-1) begin
+                if (cnt_j == nb_points-1) begin
                     cnt_j <= '0;
                 end else begin
                     cnt_j <= cnt_j + 1'b1;
@@ -299,7 +310,7 @@ module norm_entropy_grad_v2 #(
             
             // Stage 2: P_dot accumulation
             if (valid_2) begin
-                if (j_2 == NB_POINTS-1) begin
+                if (j_2 == nb_points-1) begin
                     P_dot_X <= P_dot_X_next >> 16; // Final logical shift
                     P_dot_Y <= P_dot_Y_next >> 16;
 
@@ -319,7 +330,7 @@ module norm_entropy_grad_v2 #(
             j_3 <= j_2;
 
             // Stage 3: grad_X and grad_Y (only on the row's last column)
-            if (valid_grad && (j_3 == NB_POINTS-1)) begin
+            if (valid_grad && (j_3 == nb_points-1)) begin
                 grad_X         <= $signed(P_dot_X[15:0]) - $signed({1'b0,coord_X_i});
                 grad_Y         <= $signed(P_dot_Y[15:0]) - $signed({1'b0,coord_Y_i});
                 i_4            <= i_3;
@@ -342,7 +353,7 @@ module norm_entropy_grad_v2 #(
         end
     end
 
-    assign done = valid_out && (out_j == NB_POINTS-1);
+    assign done = valid_out && (out_j == nb_points-1);
 
     assign forca_s = {1'b0, forca};
 
@@ -368,7 +379,7 @@ module norm_entropy_grad_v2 #(
         end else begin
             valid_entropy <= 1'b0;
             if (valid_1) begin
-                if (j_1 == NB_POINTS-1) begin
+                if (j_1 == nb_points-1) begin
                     entropy       <= 32'd65536 - entropy_next; // Final subtraction, once per row
                     valid_entropy <= 1'b1;
                     entropy_reg  <= '0;

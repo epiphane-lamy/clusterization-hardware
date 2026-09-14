@@ -1,7 +1,7 @@
 //=============================================================================
 // Testbench: full_step_cluster_v2_tb
 //
-// Full-system testbench for the clusterization toplevel (v2 architecture):
+// Full-system testbench for the clusterization toplevel (v3 architecture):
 // loads a benchmark point set (produced by the fixed-point software reference
 // model, see docs/ARCHITECTURE.md section 8) into both duplicated coordinate
 // memories, runs the full pipeline to completion, and writes out the final
@@ -80,6 +80,24 @@ module full_step_cluster_v2_tb #(
     logic       rst_n;
 
     // -------------------------------------------------------------------
+    // NB_POINTS_LOADER
+    // -------------------------------------------------------------------
+
+    logic        valid_load;
+    logic [2:0]  load;
+    logic [11:0] nb_points;
+
+    // NB_POINTS_LOADER to load the previously hardcoded NB_POINTS constant (see ADR-00011)
+    NB_POINTS_LOADER NB_POINTS_LOADER (
+        .clk        (clk),
+        .rst_n      (rst_n),
+
+        .valid_load (valid_load),
+        .load       (load),
+        .nb_points  (nb_points)
+    );
+
+    // -------------------------------------------------------------------
     // coord_b1 / coord_b2 memory port declarations
     // -------------------------------------------------------------------
     coord_owner_t     owner_b1;
@@ -124,7 +142,6 @@ module full_step_cluster_v2_tb #(
 
     // DUT exp block
     dist_mat_arg_exp_v2 #(
-        .NB_POINTS         (NB_POINTS),
         .COORD_W           (COORD_W),
         .ADDR_W            (ADDR_W),
         .ADDR_P_IJ_W       (ADDR_P_IJ_W),
@@ -134,6 +151,8 @@ module full_step_cluster_v2_tb #(
     ) exp_block (
         .clk               (clk),
         .rst_n             (rst_n),
+
+        .nb_points         (nb_points),
 
         .start             (start_b1),
         .step_idx          (step_idx),
@@ -227,7 +246,6 @@ module full_step_cluster_v2_tb #(
 
     // DUT: grad block
     norm_entropy_grad_v2 #(
-        .NB_POINTS       (NB_POINTS),
         .COORD_W         (COORD_W),
         .ADDR_W          (ADDR_W),
 
@@ -238,6 +256,8 @@ module full_step_cluster_v2_tb #(
     ) grad_block (
         .clk             (clk),
         .rst_n           (rst_n),
+
+        .nb_points       (nb_points),
 
         .addr            (addr_coord_compute_b2),
         .coord_X         (coord_X_b2),
@@ -321,8 +341,7 @@ module full_step_cluster_v2_tb #(
     // read further down, since the two never run at the same time (see
     // owner_b1 below) -- and broadcasts its write to BOTH coordinate
     // memories via port_act_b1/port_act_b2.
-    act_coord #(
-        .NB_POINTS   (NB_POINTS),
+    act_coord_v3 #(
         .COORD_W     (COORD_W),
         .ADDR_W      (ADDR_W),
         .ACT_W       (ACT_W)
@@ -331,6 +350,8 @@ module full_step_cluster_v2_tb #(
         .rst_n       (rst_n),
 
         .start       (start_b3),
+
+        .nb_points   (nb_points),
 
         .addr_coord  (addr_coord_b3),
         .we_coord    (we_coord_b3),
@@ -392,8 +413,7 @@ module full_step_cluster_v2_tb #(
     logic done_cluster;
 
     // DUT: cluster_assign
-    cluster_assign #(
-        .NB_POINTS     (NB_POINTS),
+    cluster_assign_v3 #(
         .COORD_W       (COORD_W),
         .ADDR_W        (ADDR_W),
         .TOL           (TOL)
@@ -402,6 +422,8 @@ module full_step_cluster_v2_tb #(
         .rst_n         (rst_n),
 
         .start         (start_b4),
+
+        .nb_points     (nb_points),
 
         .addr_coord    (addr_coord_compute_b4),
         .coord_X       (coord_X_b1),
@@ -446,7 +468,7 @@ module full_step_cluster_v2_tb #(
         end else begin
             start_b3 <= 1'b0;
             if (done_b2) begin
-                if (cnt_done_b2 == NB_POINTS - 1) begin
+                if (cnt_done_b2 == nb_points - 1) begin
                     start_b3    <= 1'b1;
                     cnt_done_b2 <= '0;
                 end else begin
@@ -756,6 +778,9 @@ module full_step_cluster_v2_tb #(
         control_mem_cluster  =  1;
         addr_cluster_tb      = '0;
         start_tb_b1          =  0;
+                
+        valid_load           =  0;
+        load                 = '0;
 
         fork
             monitor_results();
@@ -766,6 +791,19 @@ module full_step_cluster_v2_tb #(
         // ---------------------------------------------------------------------
         @(posedge clk);
         rst_n = 1;
+        @(posedge clk);
+
+
+        valid_load =  1;
+        load       = NB_POINTS[2:0];
+        @(posedge clk);
+        load       = NB_POINTS[5:3];
+        @(posedge clk);
+        load       = NB_POINTS[8:6];
+        @(posedge clk);
+        load       = NB_POINTS[11:9];
+        @(posedge clk);
+        valid_load =  0;
         @(posedge clk);
         
         // Load the X_f / Y_f vectors into memory. This file is produced by

@@ -1,6 +1,11 @@
 //=============================================================================
 // Module: clusterization_v2 (toplevel)
 //
+// This toplevel extends v2 by adding an input port for loading the NB_POINTS
+// constant at runtime. In v2, NB_POINTS was a compile-time parameter; in v3,
+// it is provided as an input so that the number of points can be configured
+// dynamically.
+//
 // Instantiates and wires together the full clustering pipeline described in
 // docs/ARCHITECTURE.md (v2 architecture): the exp/grad iterative loop
 // (on-the-fly, no row buffering), the upd (act_coord) block that closes
@@ -24,7 +29,6 @@
 //=============================================================================
 
 module clusterization_v2 #(
-    parameter int NB_POINTS    = 1250,              // Number of points. Fixed default for now, see docs/blocks/exp.md, known limitations.
     parameter int NB_ITER      = 50,                // Number of iterations
     parameter int COORD_W      = 16,                // Coordinate width
     parameter int ADDR_W       = 12,                // Point address width
@@ -44,6 +48,14 @@ module clusterization_v2 #(
  
     input logic start, // Launches the clustering pipeline
  
+    // Added for v3 (see ADR-0011): nb_points is now loaded at runtime via
+    // NB_POINTS_LOADER instead of being a compile-time NB_POINTS parameter,
+    // letting the same fabricated chip process any benchmark up to its
+    // physical 4096-point capacity (ADR-0007), not only the exact point count
+    // it was synthesized for.
+    input  logic        valid_load,
+    input  logic [2:0]  load,
+
     // --- Point BRAM load port (Xf / Yf) -- external write access for testbenches ---
     input logic control_mem_coord_load, // 1: give the coordinate memory port to the external loader below
  
@@ -107,6 +119,23 @@ module clusterization_v2 #(
     coord_mem_port_t  port_coord_b1_load, port_compute_b1, port_act_b1, port_cluster_b1, port_mux_b1;
     coord_owner_t     owner_b2;
     coord_mem_port_t  port_coord_b2_load, port_compute_b2, port_act_b2, port_cluster_b2, port_mux_b2;
+
+
+    // -------------------------------------------------------------------
+    // NB_POINTS_LOADER
+    // -------------------------------------------------------------------
+
+    logic [11:0] nb_points;
+
+    // NB_POINTS_LOADER to load the previously hardcoded NB_POINTS constant (see ADR-00011)
+    NB_POINTS_LOADER NB_POINTS_LOADER (
+        .clk        (clk),
+        .rst_n      (rst_n),
+
+        .valid_load (valid_load),
+        .load       (load),
+        .nb_points  (nb_points)
+    );
     
     // -------------------------------------------------------------------
     // exp block and its dedicated coordinate memory / exp_LUT
@@ -142,7 +171,6 @@ module clusterization_v2 #(
 
     // DUT exp block
     dist_mat_arg_exp_v2 #(
-        .NB_POINTS       (NB_POINTS),
         .COORD_W         (COORD_W),
         .ADDR_W          (ADDR_W),
         .ADDR_P_IJ_W     (ADDR_P_IJ_W),
@@ -153,6 +181,8 @@ module clusterization_v2 #(
     ) exp_block (
         .clk               (clk),
         .rst_n             (rst_n),
+
+        .nb_points         (nb_points),
 
         .start             (start_b1),
         .step_idx          (step_idx),
@@ -246,7 +276,6 @@ module clusterization_v2 #(
     // section 5 and docs/blocks/grad_block.md section 4 is realized here simply
     // by wiring exp's own out_i output directly into grad's out_i input.
     norm_entropy_grad_v2 #(
-        .NB_POINTS       (NB_POINTS),
         .COORD_W         (COORD_W),
         .ADDR_W          (ADDR_W),
 
@@ -257,6 +286,8 @@ module clusterization_v2 #(
     ) grad_block (
         .clk             (clk),
         .rst_n           (rst_n),
+
+        .nb_points       (nb_points),
 
         .addr            (addr_coord_compute_b2),
         .coord_X         (coord_X_b2),
@@ -342,8 +373,7 @@ module clusterization_v2 #(
     // read further down, since the two never run at the same time (see
     // owner_b1 below) -- and broadcasts its write to BOTH coordinate
     // memories via port_act_b1/port_act_b2.
-    act_coord #(
-        .NB_POINTS   (NB_POINTS),
+    act_coord_v3 #(
         .COORD_W     (COORD_W),
         .ADDR_W      (ADDR_W),
         .ACT_W       (ACT_W)
@@ -352,6 +382,8 @@ module clusterization_v2 #(
         .rst_n       (rst_n),
 
         .start       (start_b3),
+
+        .nb_points   (nb_points),
 
         .addr_coord  (addr_coord_b3),
         .we_coord    (we_coord_b3),
@@ -413,8 +445,7 @@ module clusterization_v2 #(
 
 
     // DUT: cluster_assign
-    cluster_assign #(
-        .NB_POINTS     (NB_POINTS),
+    cluster_assign_v3 #(
         .COORD_W       (COORD_W),
         .ADDR_W        (ADDR_W),
         .TOL           (TOL)
@@ -423,6 +454,8 @@ module clusterization_v2 #(
         .rst_n         (rst_n),
 
         .start         (start_b4),
+
+        .nb_points     (nb_points),
 
         .addr_coord    (addr_coord_compute_b4),
         .coord_X       (coord_X_b1),
@@ -467,7 +500,7 @@ module clusterization_v2 #(
         end else begin
             start_b3 <= 1'b0;
             if (done_b2) begin
-                if (cnt_done_b2 == NB_POINTS - 1) begin
+                if (cnt_done_b2 == nb_points - 1) begin
                     start_b3    <= 1'b1;
                     cnt_done_b2 <= '0;
                 end else begin

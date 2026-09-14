@@ -6,6 +6,8 @@
 rtl/clusterization_pkg.sv
 rtl/clusterization_v2.sv
 
+rtl/NB_POINTS_LOADER.sv
+
 rtl/memory_single_port.sv
 
 rtl/memory_dual_port.sv
@@ -13,7 +15,9 @@ rtl/memory_dual_port.sv
 rtl/memory_cluster.sv
 
 rtl/cluster_assign.sv
+rtl/cluster_assign_v3.sv
 rtl/act_coord.sv
+rtl/act_coord_v3.sv
 rtl/ping_pong_arbiter.sv
 rtl/norm_entropy_grad.sv
 rtl/norm_entropy_grad_v2.sv

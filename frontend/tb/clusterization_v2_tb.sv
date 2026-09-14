@@ -1,7 +1,7 @@
 //=============================================================================
 // Testbench: clusterization_v2_tb
 //
-// Full-system testbench for the clusterization toplevel (v2 architecture):
+// Full-system testbench for the clusterization toplevel (v3 architecture):
 // loads a benchmark point set (produced by the fixed-point software reference
 // model, see docs/ARCHITECTURE.md section 8) into both duplicated coordinate
 // memories, runs the full pipeline to completion, and writes out the final
@@ -34,6 +34,9 @@ module clusterization_v2_tb #(
     logic               rst_n;
     logic               start;
 
+    logic               valid_load;
+    logic [2:0]         load;
+
     logic               control_mem_coord_load;
     logic               we_coord_load;
     logic [ADDR_W-1:0]  addr_coord_load;
@@ -52,7 +55,6 @@ module clusterization_v2_tb #(
 
 
     clusterization_v2 #(
-        .NB_POINTS                (NB_POINTS),
         .NB_ITER                  (NB_ITER),
         .COORD_W                  (COORD_W),
         .ADDR_W                   (ADDR_W),
@@ -70,6 +72,9 @@ module clusterization_v2_tb #(
         .clk                      (clk),
         .rst_n                    (rst_n),
         .start                    (start),
+
+        .valid_load               (valid_load),
+        .load                     (load),
 
         .control_mem_coord_load   (control_mem_coord_load),
         .we_coord_load            (we_coord_load),
@@ -145,15 +150,30 @@ module clusterization_v2_tb #(
         rst_n                     =  0;
         start                     =  0;
 
-        control_mem_coord_load =  0;
-        we_coord_load          =  0;
-        addr_coord_load        = '0;
+        control_mem_coord_load    =  0;
+        we_coord_load             =  0;
+        addr_coord_load           = '0;
 
         control_mem_cluster_read  =  1;
         addr_cluster_read         = '0;
 
+        valid_load                =  0;
+        load                      = '0;
+
         @(posedge clk);
         rst_n = 1;
+        @(posedge clk);
+
+        valid_load =  1;
+        load       = NB_POINTS[2:0];
+        @(posedge clk);
+        load       = NB_POINTS[5:3];
+        @(posedge clk);
+        load       = NB_POINTS[8:6];
+        @(posedge clk);
+        load       = NB_POINTS[11:9];
+        @(posedge clk);
+        valid_load =  0;
         @(posedge clk);
         
         // Load the X_f / Y_f vectors into memory. This file is produced by

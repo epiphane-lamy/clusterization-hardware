@@ -46,7 +46,6 @@
 
 
 module dist_mat_arg_exp_v2 #(
-    parameter int NB_POINTS    = 8,          // Number of points, Currently a fixed default
     parameter int COORD_W      = 16,         // Coordinate width, fixed-point
     parameter int ADDR_W       = 7,          // Point BRAM address width
     parameter int P_IJ_W       = 16,         // P_ij width, fixed-point
@@ -59,7 +58,14 @@ module dist_mat_arg_exp_v2 #(
 	)(
 	input  logic             clk,
 	input  logic             rst_n,
- 
+
+    // Added for v3 (see ADR-0011): nb_points is now loaded at runtime via
+    // NB_POINTS_LOADER instead of being a compile-time NB_POINTS parameter,
+    // letting the same fabricated chip process any benchmark up to its
+    // physical 4096-point capacity (ADR-0007), not only the exact point count
+    // it was synthesized for.
+    input  logic [11:0]      nb_points,
+
     input logic              start,     // Launches a full sweep (all rows) for the current step
     input logic [STEP_W-1:0] step_idx,  // Current iteration index, selects K_step from the ROM
 
@@ -182,7 +188,7 @@ module dist_mat_arg_exp_v2 #(
     // (cnt_i == NB_POINTS, every row already has a sum by then). See
     // docs/blocks/exp_block_v2.md section 2 for the full pass-by-pass table.
     assign issue_j     = ((current_state == S_FETCH_WAIT) || (current_state == S_RUN)) && (cnt_i != 0);
-    assign issue_j_sum = ((current_state == S_FETCH_WAIT) || (current_state == S_RUN)) && (cnt_i != NB_POINTS);
+    assign issue_j_sum = ((current_state == S_FETCH_WAIT) || (current_state == S_RUN)) && (cnt_i != nb_points);
 
  
     // -------------------------------------------------------------------
@@ -212,7 +218,7 @@ module dist_mat_arg_exp_v2 #(
                 end
  
                 S_RUN: begin
-                    if (cnt_j != NB_POINTS - 1)
+                    if (cnt_j != nb_points - 1)
                         cnt_j <= cnt_j + 1'b1;
                     // else: last address of the row already issued, hold cnt_j
                 end
@@ -223,7 +229,7 @@ module dist_mat_arg_exp_v2 #(
                     // credit_avail signal that protected it, are both gone,
                     // see ADR-0008). Runs through cnt_i == NB_POINTS once,
                     // for the extra final pass (see docs/blocks/exp_block_v2.md).
-                    if ((cnt_i != NB_POINTS))
+                    if ((cnt_i != nb_points))
                         cnt_i <= cnt_i + 1'b1;
                 end
  
@@ -253,13 +259,13 @@ module dist_mat_arg_exp_v2 #(
             S_IDLE       : next_state = start ? S_FETCH_I : S_IDLE;
             S_FETCH_I    : next_state = S_FETCH_WAIT;
             S_FETCH_WAIT : next_state = S_RUN;
-            S_RUN        : next_state = (cnt_j == NB_POINTS - 1) ? S_LAST_WAIT : S_RUN;
+            S_RUN        : next_state = (cnt_j == nb_points - 1) ? S_LAST_WAIT : S_RUN;
             // cnt_i here is still the PRE-increment value for this pass (the
             // increment above happens the same cycle); reaching S_DRAIN only
             // once cnt_i was already NB_POINTS means the extra final pass
             // (cnt_i == NB_POINTS) still runs through S_FETCH_I once more
             // before draining.
-            S_LAST_WAIT  : next_state = (cnt_i == NB_POINTS) ? S_DRAIN : S_FETCH_I;
+            S_LAST_WAIT  : next_state = (cnt_i == nb_points) ? S_DRAIN : S_FETCH_I;
             S_DRAIN      : next_state = (drain_cnt == PIPE_DEPTH - 1) ? S_DONE : S_DRAIN;
             S_DONE       : next_state = S_IDLE;
             default      : next_state = S_IDLE;
@@ -583,7 +589,7 @@ module dist_mat_arg_exp_v2 #(
         end else begin
             valid_sum_row_P <= 1'b0;
             if (valid_out_sum) begin
-                if (out_j_sum == NB_POINTS-1) begin
+                if (out_j_sum == nb_points-1) begin
                     sum_row_P       <= sum_row_P_next; // Full row sum, including this last P_ij
                     valid_sum_row_P <= 1'b1;
                     sum_row_P_reg   <= '0;             // Reset for the next row
