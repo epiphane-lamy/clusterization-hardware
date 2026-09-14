@@ -27,6 +27,9 @@ module clusterization_v2_vect_tb #(
     logic               rst_n;
     logic               start;
 
+    logic               valid_load;
+    logic [2:0]         load;
+
     logic               control_mem_coord_load;
     logic               we_coord_load;
     logic [ADDR_W-1:0]  addr_coord_load;
@@ -50,6 +53,9 @@ module clusterization_v2_vect_tb #(
         .clk                      (clk),
         .rst_n                    (rst_n),
         .start                    (start),
+
+        .valid_load               (valid_load),
+        .load                     (load),
 
         .control_mem_coord_load   (control_mem_coord_load),
         .we_coord_load            (we_coord_load),
@@ -122,15 +128,31 @@ module clusterization_v2_vect_tb #(
         rst_n                     =  0;
         start                     =  0;
 
-        control_mem_coord_load =  0;
-        we_coord_load          =  0;
-        addr_coord_load        = '0;
+        control_mem_coord_load    =  0;
+        we_coord_load             =  0;
+        addr_coord_load           = '0;
 
         control_mem_cluster_read  =  1;
         addr_cluster_read         = '0;
 
+        valid_load                =  0;
+        load                      = '0;
+
         @(posedge clk);
         rst_n = 1;
+        @(posedge clk);
+
+        // Loading NB_POINTS constant
+        valid_load =  1;
+        load       = NB_POINTS[2:0];
+        @(posedge clk);
+        load       = NB_POINTS[5:3];
+        @(posedge clk);
+        load       = NB_POINTS[8:6];
+        @(posedge clk);
+        load       = NB_POINTS[11:9];
+        @(posedge clk);
+        valid_load =  0;
         @(posedge clk);
         
         // Load the X_f / Y_f vectors into memory. This file is produced by

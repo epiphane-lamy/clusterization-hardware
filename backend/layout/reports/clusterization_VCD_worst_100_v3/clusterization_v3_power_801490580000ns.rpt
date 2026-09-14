@@ -1,0 +1,292 @@
+
+Power Net Detected:
+        Voltage	    Name
+             0V	    VSS
+          1.32V	    VDD
+             0V	    VSS
+          1.32V	    VDD
+Using Power View: analysis_normal_fast_min.
+AAE_INFO: opIsDesignInPostRouteState() is 1
+AAE_INFO: resetNetProps viewIdx 1 
+Starting SI iteration 1 using Infinite Timing Windows
+#################################################################################
+# Design Stage: PostRoute
+# Design Name: clusterization_v2
+# Design Mode: 45nm
+# Analysis Mode: MMMC OCV 
+# Parasitics Mode: No SPEF/RCDB 
+# Signoff Settings: SI On 
+#################################################################################
+**WARN: (IMPEXT-3518):	The lower process node is set (using command 'set_design_mode') but the technology file for TQuantus extraction not specified. Therefore, going for post_route (extract_rc_effort_level low) extraction instead of recommended extractor 'TQuantus' for lower nodes. Use command 'set_analysis_view/update_rc_corner' to specify the technology file for TQuantus extraction to take place.
+Extraction called for design 'clusterization_v2' of instances=46530 and nets=36101 using extraction engine 'post_route' at effort level 'low' .
+post_route (extract_rc_effort_level low) RC Extraction called for design clusterization_v2.
+RC Extraction called in multi-corner(2) mode.
+Process corner(s) are loaded.
+ Corner: rc_worst
+ Corner: rc_best
+extractDetailRC Option : -outfile /home/epiphane/projets/clusterization/backend/layout/work/innovus_temp_1086499_d0dfe87b-fb14-4664-b9d8-0a2e88a6e692_gmicro02_epiphane_7NKdTn/clusterization_v2_1086499_d0dfe87b-fb14-4664-b9d8-0a2e88a6e692_CHmUz1.rcdb.d  -basic
+RC Mode: PostRoute extract_rc_effort_level low [Basic CapTable, RC Table Resistances]
+      RC Corner Indexes            0       1   
+Capacitance Scaling Factor   : 1.00000 1.00000 
+Coupling Cap. Scaling Factor : 1.00000 1.00000 
+Resistance Scaling Factor    : 1.00000 1.00000 
+Clock Cap. Scaling Factor    : 1.00000 1.00000 
+Clock Res. Scaling Factor    : 1.00000 1.00000 
+Shrink Factor                : 1.00000
+Initializing multi-corner resistance tables ...
+Checking LVS Completed (CPU Time= 0:00:00.1  MEM= 2734.1M)
+Extracted 10.0003% (CPU Time= 0:00:01.0  MEM= 2741.3M)
+Extracted 20.0004% (CPU Time= 0:00:01.1  MEM= 2741.3M)
+Extracted 30.0004% (CPU Time= 0:00:01.2  MEM= 2741.3M)
+Extracted 40.0003% (CPU Time= 0:00:01.5  MEM= 2741.3M)
+Extracted 50.0004% (CPU Time= 0:00:01.7  MEM= 2741.3M)
+Extracted 60.0004% (CPU Time= 0:00:02.1  MEM= 2741.3M)
+Extracted 70.0003% (CPU Time= 0:00:02.6  MEM= 2741.3M)
+Extracted 80.0003% (CPU Time= 0:00:02.7  MEM= 2741.3M)
+Extracted 90.0004% (CPU Time= 0:00:02.9  MEM= 2741.3M)
+Extracted 100% (CPU Time= 0:00:03.5  MEM= 2750.1M)
+Number of Extracted Resistors     : 785260
+Number of Extracted Ground Cap.   : 772177
+Number of Extracted Coupling Cap. : 1517296
+Filtering XCap in 'relativeAndCoupling' mode using values coupling_c_threshold=0.1fF, relative_c_threshold=1, and total_c_threshold=0fF.
+ Corner: rc_worst
+ Corner: rc_best
+Checking LVS Completed (CPU Time= 0:00:00.1  MEM= 2749.6M)
+PostRoute (extract_rc_effort_level low) RC Extraction DONE (CPU Time: 0:00:04.6  Real Time: 0:00:05.0  MEM: 2761.453M)
+AAE_INFO: 1 threads acquired from CTE.
+Start delay calculation (fullDC) (1 T). (MEM=2782.12)
+*** Calculating scaling factor for fast libraries using the default operating condition of each library.
+Initializing multi-corner resistance tables ...
+Total number of fetched objects 35238
+AAE_INFO: Total number of nets for which stage creation was skipped for all views 0
+AAE_INFO-618: Total number of nets in the design is 36101,  98.0 percent of the nets selected for SI analysis
+End delay calculation. (MEM=2900.99 CPU=0:00:10.0 REAL=0:00:10.0)
+End delay calculation (fullDC). (MEM=2881.41 CPU=0:00:11.2 REAL=0:00:11.0)
+Save waveform /home/epiphane/projets/clusterization/backend/layout/work/innovus_temp_1086499_d0dfe87b-fb14-4664-b9d8-0a2e88a6e692_gmicro02_epiphane_7NKdTn/.AAE_fXbCBh/.AAE_1086499_d0dfe87b-fb14-4664-b9d8-0a2e88a6e692/waveform.data...
+Loading CTE timing window with TwFlowType 0...(CPU = 0:00:00.0, REAL = 0:00:00.0, MEM = 2890.6M)
+Add other clocks and setupCteToAAEClockMapping during iter 1
+Loading CTE timing window is completed (CPU = 0:00:00.4, REAL = 0:00:00.0, MEM = 2890.6M)
+Starting SI iteration 2
+Start delay calculation (fullDC) (1 T). (MEM=2836.24)
+Glitch Analysis: View analysis_normal_fast_min -- Total Number of Nets Skipped = 252. 
+Glitch Analysis: View analysis_normal_fast_min -- Total Number of Nets Analyzed = 35238. 
+Total number of fetched objects 35238
+AAE_INFO: Total number of nets for which stage creation was skipped for all views 0
+AAE_INFO-618: Total number of nets in the design is 36101,  17.9 percent of the nets selected for SI analysis
+End delay calculation. (MEM=2873.57 CPU=0:00:02.2 REAL=0:00:03.0)
+End delay calculation (fullDC). (MEM=2873.57 CPU=0:00:02.2 REAL=0:00:03.0)
+Load RC corner of view analysis_normal_fast_min
+
+Begin Power Analysis
+
+             0V	    VSS
+          1.32V	    VDD
+
+Begin Processing Timing Library for Power Calculation
+
+Ended Processing Timing Library for Power Calculation: (cpu=0:00:00, real=0:00:00, mem(process/total/peak)=2842.63MB/9787.43MB/2860.68MB)
+
+
+
+Begin Processing Power Net/Grid for Power Calculation
+
+Ended Processing Power Net/Grid for Power Calculation: (cpu=0:00:00, real=0:00:00, mem(process/total/peak)=2842.63MB/9787.43MB/2860.68MB)
+
+Begin Processing Timing Window Data for Power Calculation
+
+clk(100MHz) CK: assigning clock clk to net clk
+Ended Processing Timing Window Data for Power Calculation: (cpu=0:00:00, real=0:00:00, mem(process/total/peak)=2856.30MB/9787.43MB/2860.68MB)
+
+Begin Processing User Attributes
+
+Ended Processing User Attributes: (cpu=0:00:00, real=0:00:00, mem(process/total/peak)=2857.85MB/9787.43MB/2860.68MB)
+
+Begin Processing Signal Activity
+
+
+Starting Levelizing
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT)
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 10%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 20%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 30%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 40%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 50%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 60%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 70%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 80%
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT): 90%
+
+Finished Levelizing
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT)
+
+Starting Activity Propagation
+2026-Sep-14 13:23:53 (2026-Sep-14 16:23:53 GMT)
+** INFO:  (VOLTUS_POWR-1356): No default input activity has been set. Defaulting to 0.2.
+Use 'set_default_switching_activity -input_activity' command to change the default activity value.
+
+
+Finished Activity Propagation
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT)
+
+Activity annotation summary:
+        Primary Inputs : 66/66 = 100%
+          Flop outputs : 5930/5930 = 100%
+  Memory/Macro outputs : 128/128 = 100%
+      Tristate outputs : 0/0 = 0%
+            Total Nets : 34219/35238 = 97.1082%
+
+Ended Processing Signal Activity: (cpu=0:00:01, real=0:00:01, mem(process/total/peak)=2860.41MB/9787.43MB/2860.68MB)
+
+Begin Power Computation
+
+      ----------------------------------------------------------
+      # of cell(s) missing both power/leakage table: 0
+      # of cell(s) missing power table: 0
+      # of cell(s) missing leakage table: 1
+      ----------------------------------------------------------
+CellName                                  Missing Table(s)
+RAM_4096X32                               leakage power, 
+
+
+
+Starting Calculating power
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT)
+ ... Calculating switching power
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT): 10%
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT): 20%
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT): 30%
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT): 40%
+2026-Sep-14 13:23:54 (2026-Sep-14 16:23:54 GMT): 50%
+ ... Calculating internal and leakage power
+2026-Sep-14 13:23:55 (2026-Sep-14 16:23:55 GMT): 60%
+2026-Sep-14 13:23:55 (2026-Sep-14 16:23:55 GMT): 70%
+2026-Sep-14 13:23:56 (2026-Sep-14 16:23:56 GMT): 80%
+2026-Sep-14 13:23:56 (2026-Sep-14 16:23:56 GMT): 90%
+
+Finished Calculating power
+2026-Sep-14 13:23:57 (2026-Sep-14 16:23:57 GMT)
+      # of MSMV cell(s) missing power_level: 0
+Ended Power Computation: (cpu=0:00:03, real=0:00:02, mem(process/total/peak)=2860.41MB/9787.43MB/2860.68MB)
+
+Begin Processing User Attributes
+
+Begin Processing set_power
+Ended Processing set_power: (cpu=0:00:00, real=0:00:00,
+mem(process/total/peak)=2860.41MB/9787.43MB/2860.68MB)
+Ended Processing User Attributes: (cpu=0:00:00, real=0:00:00, mem(process/total/peak)=2860.41MB/9787.43MB/2860.68MB)
+
+Ended Power Analysis: (cpu=0:00:04, real=0:00:04, mem(process/total/peak)=2860.41MB/9787.43MB/2860.68MB)
+
+Begin Boundary Leakage Calculation
+Ended Boundary Leakage Calculation: (cpu=0:00:00, real=0:00:00,
+mem(process/total/peak)=2861.15MB/9787.43MB/2861.15MB)
+Begin Static Power Report Generation
+*----------------------------------------------------------------------------------------
+*	Innovus 25.10-p002_1 (64bit) 04/23/2025 12:43 (Linux 4.18.0-305.el8.x86_64)
+*	
+*
+* 	Date & Time:	2026-Sep-14 13:23:57 (2026-Sep-14 16:23:57 GMT)
+*
+*----------------------------------------------------------------------------------------
+*
+*	Design: clusterization_v2
+*
+*	Liberty Libraries used:
+*	        analysis_normal_fast_min: /home/epiphane/projets/clusterization/backend/layout/deliverables/clusterization_v2_worst_100_0/final.enc/libs/mmmc/fast_vdd1v2_basicCells.lib
+*	        analysis_normal_fast_min: /home/epiphane/projets/clusterization/backend/layout/deliverables/clusterization_v2_worst_100_0/final.enc/libs/mmmc/RAM_4096x32.lib
+*	        analysis_normal_fast_min: /home/epiphane/projets/clusterization/backend/layout/deliverables/clusterization_v2_worst_100_0/final.enc/libs/mmmc/RAM2P_1024x32.lib
+*
+*	Parasitic Files used:
+*
+*       Power View : analysis_normal_fast_min
+*
+*       User-Defined Activity : N.A.
+*
+*	Switching Activity File used:
+*	        /home/epiphane/projets/clusterization/frontend/VCDs/clusterization_v2_worst_100_801490580000.vcd
+*                  Vcd Window used(Start Time, Stop Time):  
+*                Vcd Scale Factor: 1
+*
+*       Hierarchical Global Activity: N.A.
+*
+*       Global Activity: N.A.
+*
+*       Sequential Element Activity: 0.200000
+*
+*       Primary Input Activity: 0.200000
+*
+*       Default icg ratio: N.A.
+*
+*       Global Comb ClockGate Ratio: N.A.
+*
+*	Power Units = 1uW
+*
+*	Time Units = 1e-09 secs
+*
+*       report_power -view analysis_normal_fast_min
+*
+-----------------------------------------------------------------------------------------
+*
+
+
+
+Total Power
+-----------------------------------------------------------------------------------------
+Total Internal Power:     8196.57704007 	   89.1811%
+Total Switching Power:     981.65074726 	   10.6806%
+Total Leakage Power:        12.70702162 	    0.1383%
+Total Power:              9190.93480896
+-----------------------------------------------------------------------------------------
+
+
+Group                           Internal   Switching     Leakage       Total  Percentage 
+                                Power      Power         Power         Power  (%)        
+-----------------------------------------------------------------------------------------
+Sequential                          3588       14.68       4.842        3608       39.25
+Macro                               4237      0.9479           0        4238       46.11
+IO                                     0           0           0           0           0
+Combinational                      182.6       327.8       7.764       518.2       5.638
+Clock (Combinational)              188.9       638.2      0.1004       827.2       9.001
+Clock (Sequential)                     0           0           0           0           0
+-----------------------------------------------------------------------------------------
+Total                               8197       981.7       12.71        9191         100
+-----------------------------------------------------------------------------------------
+
+
+Rail                  Voltage   Internal   Switching     Leakage       Total  Percentage 
+                                Power      Power         Power         Power  (%)        
+-----------------------------------------------------------------------------------------
+VDD                      1.32       8197       981.7       12.71        9191         100
+
+
+Clock                           Internal   Switching     Leakage       Total  Percentage 
+                                Power      Power         Power         Power  (%)        
+-----------------------------------------------------------------------------------------
+clk                                188.9       638.2      0.1004       827.2       9.001
+-----------------------------------------------------------------------------------------
+Total                              188.9       638.2      0.1004       827.2       9.001
+-----------------------------------------------------------------------------------------
+Clock: clk
+Clock Period: 0.010000 usec 
+Clock Toggle Rate:   200.0000 Mhz 
+Clock Static Probability:  0.5000
+  
+ 
+ 
+-----------------------------------------------------------------------------------------
+*	Power Distribution Summary: 
+*              Highest Average Power:     coord_memory_b1/u_ram (RAM_4096X32):             2085
+*              Highest Leakage Power:       CTS_ccl_a_buf_00012 (CLKBUFX20):          0.00221
+*                Total Cap:      1.07447e-10 F
+*                Total instances in design: 33222
+*                Total instances in design with no power:     0
+*                Total instances in design with no activty:     0
+
+*                Total Fillers and Decap:     0
+-----------------------------------------------------------------------------------------
+ 
+** INFO:  (VOLTUS_POWR-3465): There are 0 decaps and 0 fillers in the design
+
+Ended Static Power Report Generation: (cpu=0:00:00, real=0:00:00,
+mem(process/total/peak)=2876.80MB/9787.43MB/2876.80MB)
+

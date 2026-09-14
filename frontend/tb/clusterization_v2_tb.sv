@@ -164,6 +164,7 @@ module clusterization_v2_tb #(
         rst_n = 1;
         @(posedge clk);
 
+        // Loading NB_POINTS constant
         valid_load =  1;
         load       = NB_POINTS[2:0];
         @(posedge clk);
