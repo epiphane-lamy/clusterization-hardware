@@ -9,16 +9,16 @@ All configurations target a **100 MHz** clock unless noted otherwise (v1's frequ
 
 ---
 
-## Headline: v1.10 vs. v2.3
+## Headline: v1.10 vs. v3.0
 
 | Metric | `v1.10` (ping-pong, ADR-0003) | `v2.3` (on-the-fly, ADR-0008 & gating memory ADR-0010) | Change |
 |---|---|---|---|
 | Core area | 1582.0 × 1295.61 µm² (≈ 2,049,655 µm²) | 796.0 × 1979.8 µm² (≈ 1,575,920 µm²) | **≈ −23%** |
-| Routing density | 74.538% | 89.582% | +15 pp |
-| Total cell area | 1,958,440.66 µm² | 1,509,895.65 µm² | **≈ −23%** |
-| Setup slack (WNS) | +0.032 ns | **+0.694 ns** | ≈ 22× more margin |
-| Hold slack | −0.107 ns | −0.094 ns | slightly better |
-| Total power | 11.101 mW | 10.653 mW | **≈ −4%** |
+| Routing density | 74.538% | 90.558% | +16 pp |
+| Total cell area | 1,958,440.66 µm² | 1,510,944.57 µm² | **≈ −23%** |
+| Setup slack (WNS) | +0.032 ns | **+1.246 ns** | ≈ 39× more margin |
+| Hold slack | −0.107 ns | −0.099 ns | slightly better |
+| Total power | 11.101 mW | 9.87 mW | **≈ −11%** |
 
 Removing the `P_ij` ping-pong buffers and arbiter in favor of a duplicated `exp` compute pipeline (ADR-0008) delivers the area reduction that ADR predicted, and by a comfortable margin: it estimated roughly 460,000 µm² saved (≈480,000 µm² of removed buffer/arbiter area, against an estimated ≈20,000 µm² of added pipeline/LUT duplication); the measured reduction is ≈448,000 µm², in the same ballpark, but for a more favorable reason than expected — see §2.1.2, the actual cost of duplicating the `exp` pipeline itself turned out much smaller than the ADR's estimate, even though duplicating `exp_LUT` cost almost exactly what was predicted.
 
@@ -176,13 +176,13 @@ See the Headline section above for discussion of the large setup-margin jump ver
 
 | | `v2.0` | `v2.3` |
 |---|---|---|
-| Total power | 10.653 mW | ≈ same |
-| Internal power | 9.552 mW (89.67%) |≈ same |
-| Switching power | 1.099 mW (10.31%) | ≈ same |
-| Leakage power | 0.00213 mW (0.020%) | ≈ same |
-| Macro group share | 66.56% | ≈ same |
-| Sequential group share | 17.40% | ≈ same |
-| Combinational group share | 12.68% | ≈ same |
+| Total power | 10.653 mW | 9.85 mW |
+| Internal power | 9.552 mW (89.67%) |8.68 mW (88.1%) |
+| Switching power | 1.099 mW (10.31%) | 1.17 mW (11.9%) |
+| Leakage power | 0.00213 mW (0.020%) | 0.00214 mW (0.022%) |
+| Macro group share | 66.56% | 63.06% |
+| Sequential group share | 17.40% | 18.86% |
+| Combinational group share | 12.68% | 14.33% |
 | Highest single-instance power | `upd_memory/u_ram` (`RAM_4096X32`), 2.353 mW | same |
 
 
@@ -218,6 +218,46 @@ A brief exploration of how far `v2.3` could be pushed past the 100 MHz target:
 Setup timing closed comfortably up to 140 MHz (DRC clean), but the existing hold violation persists (as expected, since hold doesn't improve with a faster clock) and setup itself breaks down by 145 MHz. This exploration is noted here as a data point on v2's headroom, not as a change to the reported `v2.0`/`v2.3` configurations above.
 
 ---
+
+## 3. v3 results (runtime-configurable point count, ADR-0011)
+
+No new floorplanning work was done for v3 — the only RTL change from `v2.3` is the addition of `NB_POINTS_LOADER` and the corresponding parameter-to-port change in the four compute blocks (ADR-0011), so `v3.0` reuses `v2.3`'s floorplanning approach as-is ([`FLOW.md`](FLOW.md) is unchanged for this version).
+
+| | `v3.0` |
+|---|---|
+| Target frequency | 100 MHz |
+| Setup slack (WNS) | +1.246 ns |
+| Hold slack | −0.099 ns |
+| Routing density | 90.558% |
+| DRC | Clean |
+
+Area and power show only a small expected increase over `v2.3` — consistent with what ADR-0011 anticipated: the `NB_POINTS_LOADER` module itself adds a small amount of logic, and replacing every compute block's compile-time `NB_POINTS` comparisons with comparisons against a runtime register (e.g. `cnt_j == nb_points - 1`) costs a bit more than the constant-folded comparators synthesis could produce before. Neither change was large enough to justify a full new area/power breakdown table alongside §§1–2.
+
+### 3.1 A more precise power figure: VCD-based analysis
+
+Every power number elsewhere in this document — including `v3.0`'s own Innovus report above — uses a generic, uniform activity model (`Sequential Element Activity: 0.2`, `Primary Input Activity: 0.2`), not activity derived from an actual simulation. For `v3.0`, as the project's final version, a full activity-driven power analysis was additionally carried out: a VCD trace from an RTL simulation of the same 1250-point benchmark used throughout this project's RTL verification (and shown in the README), captured both post-synthesis and post-layout, fed into `report_power` in place of the generic model.
+
+| | `v3.0` (VCD-based, post-layout, `slow_max` / 0.9 V) |
+|---|---|
+| Total power | 6.317 mW |
+| Internal power | 5.880 mW (93.08%) |
+| Switching power | 0.435 mW (6.89%) |
+| Leakage power | 0.0021 mW (0.034%) |
+| Sequential group share | 23.55% |
+| Macro group share | 67.1% |
+| Combinational group share | 3.66% |
+| Clock group share | 5.70% |
+| Highest single-instance power | `coord_memory_b1/u_ram`, 2.085 mW |
+
+Two things worth noting:
+
+- **The highest-power instance is now `coord_memory_b1`**, not `upd_memory` as in every generic-activity report throughout this document (§§1.3, 2.3). This is exactly consistent with the cycle-count measurements in [ADR-0010](../decisions/0010-cen-gating-memory-macros.md): `coord_memory_b1` was found to be enabled essentially 100% of the run, more than any other gated memory — real activity data corroborates that finding directly.
+- **`RAM_4096X32` still has no leakage data** in this analysis (the tool explicitly reports it as missing one table entry) — the same library gap already documented in ADR-0010, present regardless of activity model or corner. Leakage remains, at best, an educated qualitative estimate for this macro throughout the whole project.
+
+These VCD-based figures don't replace the generic-activity numbers used everywhere else in this document for tracking relative progress across versions (`v0.0` → `v1.10` → `v2.0` → `v2.3` → `v3.0`) — that comparison remains valid precisely because the same methodology was applied consistently across every version. This section exists to provide one genuinely precise, real-activity data point for the project's final configuration, not to revise the version-to-version story told above.
+
+---
+
 
 ## 3. Layout views
 

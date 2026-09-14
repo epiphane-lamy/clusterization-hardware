@@ -42,7 +42,8 @@ if { [file exists $vcd_path] } {
     puts " VCD found! Running accurate post-layout power analysis..."
     puts "==============================================================="
     read_activity_file -format VCD -scope ${design}_vect_tb.clusterization_DUV $vcd_path -reset 
-    report_power -power_unit uW -view analysis_normal_fast_min > ${OUT_RPT}/${design}_power_${runtime}ns.rpt
+    #report_power -power_unit uW -view analysis_normal_fast_min > ${OUT_RPT}/${design}_power_${runtime}ns.rpt
+    report_power -power_unit uW -view analysis_normal_slow_max > ${OUT_RPT}/${design}_power_${runtime}ns.rpt
 } else {
     puts "WARNING: VCD not found at $vcd_path. Cannot perform accurate power analysis."
 }

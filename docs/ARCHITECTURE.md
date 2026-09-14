@@ -1,9 +1,10 @@
 # Architecture — Entropy-Based 2D Clustering Engine
 
-This document walks through the full path of the project: from the software reference model provided by the lab to the SystemVerilog hardware architecture derived from it, covering the quantization work and the design trade-offs along the way. For a quick overview, see the [README](../README.md). For the detailed, argued rationale behind each major decision, see the [ADRs](decisions/).
+This document walks through the full path of the project: from the software reference model provided by the lab to the different SystemVerilog hardware architectures developed throughout the project (see v1, v2, and v3), covering the quantization work and the design trade-offs along the way. For a quick overview, see the [README](../README.md). For the detailed, argued rationale behind each major decision, see the [ADRs](decisions/).
 
 > **Scope of this document**: the toplevel architecture and the design decisions that structure the project. The internal micro-architecture of the compute blocks — [exp](blocks/exp_block.md), [grad](blocks/grad_block.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) — is covered in [blocks/](blocks/).
 
+> **Scope of this document**: the toplevel architecture and the design decisions that structure the project. The internal micro-architecture of the compute blocks — [exp](blocks/exp_block.md), [exp_v2](blocks/exp_block_v2.md), [grad](blocks/grad_block.md), [grad_v2](blocks/grad_block_v2.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) — is covered in [blocks/](blocks/). The same applies to the memory wrappers — [coord_mem](blocks/coord_mem_wrapper.md), [cluster_mem](blocks/cluster_mem_wrapper.md), [P_ij_mem](blocks/pij_mem_wrapper.md).
 ---
 
 ## 1. The software reference model
