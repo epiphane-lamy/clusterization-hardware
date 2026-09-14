@@ -121,6 +121,13 @@ See `docs/asic/RESULTS.md` for the measured area, timing, and power impact of v2
 
 ---
 
+## 4ter. Point count — v3 (runtime-configurable)
+
+[ADR-0011](decisions/0011-runtime-configurable-nb-points.md) removes the last hardcoded constraint left in the design: `NB_POINTS`, which had been a compile-time parameter since the project's first RTL, baked into every FSM boundary condition across the four compute blocks (`exp`, `grad`, `act_coord`, `cluster_assign`). A fabricated chip could previously only process benchmarks matching the exact point count it was synthesized for.
+
+v3 builds directly on v2's architecture — no change to the dataflow or control mechanisms described in §4bis — and replaces that fixed parameter with a value chosen once per run, up to the chip's physical 4096-point ceiling (still fixed by the memory macros' size, ADR-0007). A small new module, `NB_POINTS_LOADER`, loads this value serially before each run; each compute block takes it as a runtime input (`nb_points`) instead of a compile-time constant. See ADR-0011 for the loading protocol, and for what this change means for which files became dedicated `_v3` variants versus were extended in place.
+
+---
 ## 5. Nonlinear functions: `exp()` and the inverse, without CORDIC
 
 Computing the Gaussian kernel (matrix `P`) requires an exponential, and normalizing each row requires a division (implemented as a multiplication by the inverse of the sum).
