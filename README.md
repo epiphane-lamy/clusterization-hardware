@@ -2,7 +2,7 @@
 
 A 2D point-clustering algorithm — normally run in floating point on a CPU — reimplemented as a streaming hardware pipeline in SystemVerilog, taken through a full ASIC flow (RTL → GDSII) on a real memory-macro library. No soft-core CPU, no HLS: every arithmetic step, memory access, and control decision is hand-designed RTL.
 
-![Hardware toplevel architecture, one iteration](docs/img/global_toplevel.png)
+![Hardware toplevel architecture, one iteration](docs/img/global_toplevel_v2.png)
 
 ---
 
@@ -10,7 +10,7 @@ A 2D point-clustering algorithm — normally run in floating point on a CPU — 
 
 The clustering algorithm groups 2D points into clusters using an iterative, entropy-based method — it never needs to know the number of clusters or their centers in advance, unlike k-means. It was designed in software (C, floating point) by a mathematician colleague at the lab; this project is the full hardware port of that algorithm, from architecture analysis to a working ASIC layout.
 
-**The central problem this architecture solves:** the reference software builds and stores a full `N × N` similarity matrix at every iteration. For 1000 points, that's 1,000,000 coefficients — about 2 MB, rebuilt every single iteration — which is simply not viable in hardware. Every major architectural choice in this project (row-by-row streaming, ping-pong double buffering, on-the-fly normalization) exists to avoid ever materializing that matrix. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §2 for the full reasoning.
+**The central problem this architecture solves:** the reference software builds and stores a full `N × N` similarity matrix at every iteration. For 1000 points, that's 1,000,000 coefficients — about 2 MB, rebuilt every single iteration — which is simply not viable in hardware. Every major architectural choice in this project (row-by-row streaming, on-the-fly row processing) exists to avoid ever materializing that matrix. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §2 for the full reasoning.
 
 ## Architecture at a glance
 
@@ -18,7 +18,7 @@ The hardware mirrors the software algorithm's two-phase structure: an iterative 
 
 <table>
 <tr>
-<td width="50%" align="center"><img src="docs/img/archi_part1.png" alt="Iterative loop, one step"><br><sub>Iterative loop — repeated N times</sub></td>
+<td width="50%" align="center"><img src="docs/img/archi_part1_v2.png" alt="Iterative loop, one step"><br><sub>Iterative loop — repeated N times</sub></td>
 <td width="50%" align="center"><img src="docs/img/archi_part2.png" alt="Cluster assignment"><br><sub>Final cluster assignment</sub></td>
 </tr>
 </table>

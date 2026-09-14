@@ -160,7 +160,11 @@ export RIGHT_CORE_PINS = \
     cluster_read[7] \
     cluster_read[8] \
     cluster_read[9] \
-    cluster_read[10]
+    cluster_read[10] \
+    valid_load \
+    load[0] \
+    load[1] \
+    load[2] \
 
 # ---------------- TOP ----------------
 export TOP_CORE_PINS =
@@ -391,7 +395,7 @@ sim_post_layout: sim_rtl_bb_v2
 # Parameter Sweeps & Extractions
 # =========================================================================
 
-# Faz a síntese base e gera os VCDs e os power reports para X e 2X
+# Run the baseline synthesis and generate the VCDs and power reports for X and 2X
 vcd_synth:
 	@echo "=================================================="
 	@echo "1. Running base synthesis to generate netlist and SDF"
@@ -769,6 +773,8 @@ help:
 	@echo "Core Execution Targets:"
 	@echo "  flow_full_single_config : Execute complete flow (synth -> layout -> sim -> power)."
 	@echo "  sim_rtl                 : Run standard frontend RTL simulation in Xcelium."
+	@echo "  sim_rtl_bb              : Run standard frontend RTL simulation in Xcelium with black boxes."
+	@echo "  sim_rtl_bb_v2           : Run standard frontend RTL simulation in Xcelium with black boxes (for v2 architecture)."
 	@echo "  synth                   : Run logic synthesis using Genus (generates .db for power analysis)."
 	@echo "  power_synth             : Run fast power analysis using a saved Genus .db and VCD file."
 	@echo "  vcd_synth               : Run base synth, VCD generation (X and 2X), and logical power analysis."

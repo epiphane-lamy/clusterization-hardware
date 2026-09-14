@@ -1,5 +1,5 @@
 // =====================================
-// Filelist used for RTL simulation (v2)
+// Filelist used for RTL simulation (v3)
 // with memory wrappers containing the
 // behavioral RTL models of the black-box
 // memories used in the ASIC flow.

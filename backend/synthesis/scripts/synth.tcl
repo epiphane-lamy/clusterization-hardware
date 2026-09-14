@@ -105,9 +105,10 @@ set_db init_hdl_search_path "${DEV_DIR} ${FRONTEND_DIR}"
 # Read SystemVerilog files for the v2 architecture
 read_hdl -sv {
     rtl/clusterization_pkg.sv
+    rtl/NB_POINTS_LOADER.sv
     rtl/clusterization_v2.sv
-    rtl/cluster_assign.sv
-    rtl/act_coord.sv
+    rtl/cluster_assign_v3.sv
+    rtl/act_coord_v3.sv
     rtl/norm_entropy_grad_v2.sv
     synth_files/inv_LUT_synth.sv
     synth_files/dist_mat_arg_exp_v2_synth.sv

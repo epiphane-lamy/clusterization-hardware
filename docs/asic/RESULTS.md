@@ -11,7 +11,7 @@ All configurations target a **100 MHz** clock unless noted otherwise (v1's frequ
 
 ## Headline: v1.10 vs. v2.3
 
-| Metric | `v1.10` (ping-pong, ADR-0003) | `v2.0` (on-the-fly, ADR-0008 & gating memory ADR-0010) | Change |
+| Metric | `v1.10` (ping-pong, ADR-0003) | `v2.3` (on-the-fly, ADR-0008 & gating memory ADR-0010) | Change |
 |---|---|---|---|
 | Core area | 1582.0 × 1295.61 µm² (≈ 2,049,655 µm²) | 796.0 × 1979.8 µm² (≈ 1,575,920 µm²) | **≈ −23%** |
 | Routing density | 74.538% | 89.582% | +15 pp |
