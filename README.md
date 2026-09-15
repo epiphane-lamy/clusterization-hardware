@@ -23,7 +23,7 @@ The hardware mirrors the software algorithm's two-phase structure: an iterative 
 </tr>
 </table>
 
-Full toplevel writeup, with the software-to-hardware translation reasoning: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Full toplevel writeup, covering the software-to-hardware translation and the evolution of the three architecture versions, with their key differences, trade-offs, and improvements: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ### Key design decisions
 
@@ -36,37 +36,58 @@ Full toplevel writeup, with the software-to-hardware translation reasoning: [`do
 | [ADR-0005](docs/decisions/0005-gini-entropy-vs-shannon.md) | Gini entropy instead of Shannon — no second nonlinear LUT needed |
 | [ADR-0006](docs/decisions/0006-valid-bit-for-unassigned-cluster.md) | Dedicated valid bit instead of a `-1` sentinel for unassigned clusters |
 | [ADR-0007](docs/decisions/0007-memory-macro-wrappers.md) | Interface-preserving wrappers around real ASIC memory macros |
+| [ADR-0008](docs/decisions/0008-on-the-fly-dual-exp-pipeline.md) | On-the-fly row processing with a duplicated `exp` pipeline, replacing ping-pong buffering |
+| [ADR-0009](docs/decisions/0009-single-dual-port-coord-memory-rejected.md) | Keep duplicated coordinate memories instead of merging them into a dual-port memory — rejected |
+| [ADR-0010](docs/decisions/0010-cen-gating-memory-macros.md) | Gate memory macros with `CEN` during idle windows — reducing power |
+| [ADR-0011](docs/decisions/0011-runtime-configurable-nb-points.md) | Make the point count `NB_POINTS` runtime-configurable up to the 4096-point hardware limit |
+
 
 ### Compute blocks
 
-Each block has its own detailed writeup: [`exp`](docs/blocks/exp_block.md), [`grad`](docs/blocks/grad_block.md), [`ping_pong_arbiter`](docs/blocks/ping_pong_arbiter.md), [`upd`](docs/blocks/upd_block.md), [`cluster_assign`](docs/blocks/cluster_assign.md) — and the three ASIC memory-macro wrappers: [coordinate memory](docs/blocks/coord_mem_wrapper.md), [`P_ij` memory](docs/blocks/pij_mem_wrapper.md), [cluster memory](docs/blocks/cluster_mem_wrapper.md).
+Each block has its own detailed writeup (minor architectural updates like v3 are documented directly within the SystemVerilog source code):
+
+* **`exp`**: [`v1`](docs/blocks/exp_block.md) | [`v2/v3`](docs/blocks/exp_block_v2.md)
+* **`grad`**: [`v1`](docs/blocks/grad_block.md) | [`v2/v3`](docs/blocks/grad_block_v2.md)
+* **`upd`**: [`v1/v2/v3`](docs/blocks/upd_block.md)
+* **`cluster_assign`**: [`v1/v2/v3`](docs/blocks/cluster_assign.md)
+* **`ping_pong_arbiter`**: [`v1`](docs/blocks/ping_pong_arbiter.md)
+* **Memory wrappers**:
+  * **`coordinate memory`**: [v1/v2/v3](docs/blocks/coord_mem_wrapper.md)
+  * **`cluster memory`**: [v1/v2/v3](docs/blocks/cluster_mem_wrapper.md)
+  * **`P_ij_memory`**: [v1](docs/blocks/pij_mem_wrapper.md)
 
 ## Verification
 
-Every RTL result is compared directly against a **bit-exact fixed-point software reference model** — not a floating-point resimulation — so any mismatch is unambiguously an RTL bug, not a quantization-comparison artifact. The system is verified twice over: once against the behavioral custom memories (`make sim_rtl`), and once against the ASIC macro-backed wrapper memories (`make sim_rtl_bb`) to validate the wrappers before trusting them through synthesis and place-and-route. Full details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §9.
+Every RTL result is compared directly against a **bit-exact fixed-point software reference model** — not a floating-point resimulation — so any mismatch is unambiguously an RTL bug, not a quantization-comparison artifact. The system is verified twice over: once against the behavioral custom memories (`make sim_rtl`), and once against the ASIC macro-backed wrapper memories (`make sim_rtl_bb_v3`) to validate the wrappers before trusting them through synthesis and place-and-route. The first architecture version can also be simulated using `make sim_rtl_bb`. Full details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §10.
 
 ## ASIC flow
 
-Taken through a full RTL → GDSII flow in Cadence Innovus, using two real memory macros (`RAM_4096X32`, `RAM2P_1024X32`) as black boxes. Highlights:
+Taken through a full RTL → GDSII flow in Cadence Innovus, using two real memory macros (`RAM_4096X32`, `RAM2P_1024X32`) as black boxes. Several waves of improvement have been impleted, both at the architectural and physical levels, highlighted here:
 
-- Manual floorplanning of the memory macros (edges of the die, halos, pin placement) and an iterative area/density optimization pass — routing density improved from ~7% to **74.3%**, core area reduced by **~27%**, with clean DRC and setup timing closed at 100 MHz throughout.
-- Memories dominate the design: **~97.6% of total cell area** and **~76% of total power** — see [`docs/asic/RESULTS.md`](docs/asic/RESULTS.md) for the full area/timing/power comparison, and [`docs/asic/FLOW.md`](docs/asic/FLOW.md) for the methodology, including before/after floorplan views.
+| Decision | Summary |
+|---|---|
+| `v1.0` → `v1.10` | Iterative area/density optimization pass — routing density improved from ~7% to **74.3%**, core area reduced by **~27%** |
+| `v1.10` → `v2.0` | Transition to v2 architecture: On-the-fly row processing (no row buffering, replacing ping-pong buffering) — core area reduced by **~23%**,  Total power reduced by **~4%**|
+| `v2.0` → `v2.3` | Add gate memory macros with `CEN` — enables **~99.9%** idle gating on memory_cluster and standby power savings across all memories|
+| `v2.3` → `v3.0` | Runtime-configurable point count up to 4096 points via a minimal 4-pin serial loader |
+
+Final assessment: Memories dominate the design: **~96.5% of total cell area** and **~63.06% of total power** — see [`docs/asic/RESULTS.md`](docs/asic/RESULTS.md) for the full area/timing/power comparison, and [`docs/asic/FLOW.md`](docs/asic/FLOW.md) for the methodology, including before/after floorplan views.
 
 ## Reproducing the clustering pipeline
 
 To run the full software-to-hardware comparison on your own 2D point benchmark:
 
-1. **Add your benchmark.** Create a plain-text file with no header, containing at most 2048 points, one point per line: `x`, `y`, and a cluster-number column (the latter unused by the pipeline itself, kept for reference), and place it under `frontend/data/`.
+1. **Add your benchmark.** Create a plain-text file with no header, containing at most 4096 points, one point per line: `x`, `y`, and a cluster-number column (the latter unused by the pipeline itself, kept for reference), and place it under `frontend/data/`.
 2. **Point the reference model at it.** In `clusterization.c`, edit the benchmark path near the top of the file:
    ```c
    #define BENCHMARK_FILE "../data/cluster.txt"
    ```
    Running `clusterization.c` produces the software clustering result using the full fixed-point quantized chain (see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §8) — this is the bit-exact reference the RTL testbench will be checked against.
-3. **Run the hardware simulation.** From the directory containing the Makefile:
+3. **Run the hardware simulation of the v3 architecture.** From the directory containing the Makefile:
    ```
-   make sim_rtl_bb
+   make sim_rtl_bb_v3
    ```
-   This runs the full clustering pipeline in RTL, using the ASIC macro-backed wrapper memories (see §9 of `ARCHITECTURE.md`).
+   This runs the full clustering pipeline in RTL, using the ASIC macro-backed wrapper memories (see §10 of `ARCHITECTURE.md`).
 4. **Visualize both results.** `frontend/scripts/plot_fixed_c.sh` and `plot_fixed.sh` plot the fixed-point software result and the RTL simulation result respectively. Output lands in `frontend/results_clustering/`.
 
 <table>
@@ -86,7 +107,7 @@ To run the full software-to-hardware comparison on your own 2D point benchmark:
 ├── docs/
 │   ├── ARCHITECTURE.md         # Toplevel architecture and design rationale
 │   ├── blocks/                 # one write-up per RTL block and per memory wrapper
-│   ├── decisions/              # ADR-0001 … ADR-0007
+│   ├── decisions/              # ADR-0001 … ADR-0011
 │   ├── img/                    # architecture diagrams and result plots
 │   └── asic/
 │       ├── FLOW.md             # Innovus floorplanning / P&R methodology
@@ -108,7 +129,7 @@ To run the full software-to-hardware comparison on your own 2D point benchmark:
 
 ## Status
 
-RTL for all compute blocks and memory wrappers is written, commented, and individually documented. Verified in simulation against a bit-exact software reference, both with behavioral memories and with ASIC macro-backed wrappers. Taken through a full synthesis and place-and-route flow with clean DRC and closed setup timing at 100 MHz; a small hold violation remains at the worst-case corner (see `docs/asic/RESULTS.md` for the full discussion).
+RTL for all compute blocks, memory wrappers and the 3 architecture variants (v1, v2, v3) are written, commented, and individually documented. All architectures are verified in simulation against a bit-exact software reference, both with behavioral memories and with ASIC macro-backed wrappers. Taken through a full synthesis and place-and-route flow with clean DRC and closed setup timing at 100 MHz; a small hold violation remains at the worst-case corner (see `docs/asic/RESULTS.md` for the full discussion).
 
 ## Acknowledgments
 

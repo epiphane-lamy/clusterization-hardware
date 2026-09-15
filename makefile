@@ -287,6 +287,9 @@ sim_rtl_bb:
 sim_rtl_bb_v2:
 	bash -l -c "module add $(XCELIUM_MOD) && cd $(FRONTEND_DIR) && xrun $(XRUN_FLAGS_BB_v2)"
 
+sim_rtl_bb_v3:
+	bash -l -c "module add $(XCELIUM_MOD) && cd $(FRONTEND_DIR) && xrun $(XRUN_FLAGS_BB_v2)"
+
 synth:
 	@MATCHING_DIR=$$(find $(BACKEND_DIR)/synthesis/reports -maxdepth 1 -type d -name "$(DESIGNS)_$(LIB_TYPE)_$(FREQ_MHZ)_$(RUNTIME)" 2>/dev/null | head -n 1); \
 	if [ -n "$$MATCHING_DIR" ] && [ "$(VCD)" != "1" ]; then \

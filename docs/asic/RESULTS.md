@@ -4,6 +4,8 @@ Results across the two architecture generations documented in [`ARCHITECTURE.md`
 
 - **v1** ([ADR-0003](../decisions/0003-ping-pong-buffering.md)) — the ping-pong buffered architecture. `v1.0` is the first full place-and-route pass (Innovus's automatic floorplan sizing, ~7% routing density); `v1.10` is the final, manually tightened floorplan (74.538% density) after the iterative optimization pass described in [`FLOW.md`](FLOW.md) §5.
 - **v2** ([ADR-0008](../decisions/0008-on-the-fly-dual-exp-pipeline.md)) — the on-the-fly, duplicated-`exp`-pipeline architecture, with the `P_ij` ping-pong buffers and arbiter removed. `v2.0` is the first full place-and-route pass on this architecture; `v2.3` is the final, with manually tightened floorplan and gating memory (see [`FLOW.md`](FLOW.md) §6 and [ADR-0010](../decisions/0010-cen-gating-memory-macros.md)).
+- **v3** ([ADR-0011](../decisions/0011-runtime-configurable-nb-points.md)) — v2.3's architecture with a runtime-configurable point count (`NB_POINTS_LOADER`) replacing the compile-time `NB_POINTS` parameter, up to the chip's physical 4096-point ceiling. `v3.0` is its first (and, for this project's scope, final) full P&R pass. No new floorplanning work was done for v3 — see §3.
+
 
 All configurations target a **100 MHz** clock unless noted otherwise (v1's frequency exploration, §1.4; v2, §2.4).
 
@@ -11,7 +13,9 @@ All configurations target a **100 MHz** clock unless noted otherwise (v1's frequ
 
 ## Headline: v1.10 vs. v3.0
 
-| Metric | `v1.10` (ping-pong, ADR-0003) | `v2.3` (on-the-fly, ADR-0008 & gating memory ADR-0010) | Change |
+`v3.0` is compared here against `v1.10` rather than against `v2.3`, since v1 → v3 captures the full architectural delta of the project (ping-pong buffering → on-the-fly duplicated pipeline, fixed → runtime-configurable point count), while v2.3 → v3.0 mostly just adds the small `NB_POINTS_LOADER` module on top of an already-optimized v2 floorplan — see §3 for that narrower comparison.
+
+| Metric | `v1.10` (ping-pong, ADR-0003) | `v3.0` (on-the-fly: ADR-0008, runtime `NB_POINTS`: ADR-0011 & gating memory: ADR-0010) | Change |
 |---|---|---|---|
 | Core area | 1582.0 × 1295.61 µm² (≈ 2,049,655 µm²) | 796.0 × 1979.8 µm² (≈ 1,575,920 µm²) | **≈ −23%** |
 | Routing density | 74.538% | 90.558% | +16 pp |
@@ -20,11 +24,7 @@ All configurations target a **100 MHz** clock unless noted otherwise (v1's frequ
 | Hold slack | −0.107 ns | −0.099 ns | slightly better |
 | Total power | 11.101 mW | 9.87 mW | **≈ −11%** |
 
-Removing the `P_ij` ping-pong buffers and arbiter in favor of a duplicated `exp` compute pipeline (ADR-0008) delivers the area reduction that ADR predicted, and by a comfortable margin: it estimated roughly 460,000 µm² saved (≈480,000 µm² of removed buffer/arbiter area, against an estimated ≈20,000 µm² of added pipeline/LUT duplication); the measured reduction is ≈448,000 µm², in the same ballpark, but for a more favorable reason than expected — see §2.1.2, the actual cost of duplicating the `exp` pipeline itself turned out much smaller than the ADR's estimate, even though duplicating `exp_LUT` cost almost exactly what was predicted.
-
-The setup-timing jump (+0.032 ns → +1.159 ns, roughly 36× more margin) is the most striking number here — well beyond what the area reduction alone would suggest, and related to the buffer/arbiter logic removed by ADR-0008 having been a timing bottleneck in v1. Hold slack, which doesn't respond to area/logic changes the same way setup does, stays essentially flat.
-
-Total power drops only modestly (≈4%) despite the large area reduction, since v2 removes memory (low activity, but large static/leakage-adjacent internal power) and adds flip-flops (the duplicated pipeline stages, which toggle every cycle) — see §2.2 for the shift in power composition this causes.
+The setup-timing margin and area/power reductions are carried over almost entirely from the v1 → v2 architectural change (ADR-0008) and the v2 density-optimization pass (`v2.3`, analogous to v1's own tuning) — see §2 for that breakdown. v3 itself adds a small, expected increase on top of `v2.3`'s numbers for the `NB_POINTS_LOADER` module and the slightly more complex FSM comparisons it introduces (constant comparisons become register comparisons across all four compute blocks, exactly as anticipated in ADR-0011) — not large enough to materially change the picture above.
 
 ---
 
