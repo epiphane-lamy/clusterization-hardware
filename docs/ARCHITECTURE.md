@@ -62,7 +62,7 @@ The data flow follows the same logic as the software model (`exp` → matrix `P`
 ### Part 2 — Final cluster assignment
 
 <p align="center">
-  <img src="img/archi_part2_software.png" width="350">
+  <img src="img/archi_part2_software.png" width="500">
 </p>
 
 Once the `N` iterations are complete, the points' final coordinates have converged into clusters. The `cluster assign` block then assigns a cluster number to each point based on its final position:
