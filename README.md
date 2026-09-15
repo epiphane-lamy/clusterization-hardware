@@ -40,6 +40,7 @@ Full toplevel writeup, covering the software-to-hardware translation and the evo
 | [ADR-0009](docs/decisions/0009-single-dual-port-coord-memory-rejected.md) | Keep duplicated coordinate memories instead of merging them into a dual-port memory — rejected |
 | [ADR-0010](docs/decisions/0010-cen-gating-memory-macros.md) | Gate memory macros with `CEN` during idle windows — reducing power |
 | [ADR-0011](docs/decisions/0011-runtime-configurable-nb-points.md) | Make the point count `NB_POINTS` runtime-configurable up to the 4096-point hardware limit |
+| [ADR-0012](docs/decisions/0012-on-chip-memory-vs-streaming.md) | On-chip memory for coordinates and results, rather than streaming them through an external host link |
 
 
 ### Compute blocks
@@ -107,7 +108,7 @@ To run the full software-to-hardware comparison on your own 2D point benchmark:
 ├── docs/
 │   ├── ARCHITECTURE.md         # Toplevel architecture and design rationale
 │   ├── blocks/                 # one write-up per RTL block and per memory wrapper
-│   ├── decisions/              # ADR-0001 … ADR-0011
+│   ├── decisions/              # ADR-0001 … ADR-0012
 │   ├── img/                    # architecture diagrams and result plots
 │   └── asic/
 │       ├── FLOW.md             # Innovus floorplanning / P&R methodology
