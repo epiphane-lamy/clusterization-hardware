@@ -73,7 +73,10 @@ The flow itself is unchanged from §1–§4 above. The only structural differenc
 
 <table>
 <tr>
-<td width="50%"><img src="img/floorplan_amoeba_view_v2_0.png" alt="Amoeba view, v2.0 floorplan"><br><sub><code>v2.0</code> — first full P&R pass on the reduced (4-macro) floorplan</sub></td>
+<td width="100%">
+<img src="img/floorplan_amoeba_view_v2_0.png" width="210" alt="Amoeba view, v2.0 floorplan">
+<br><sub><code>v2.0</code> — first full P&R pass on the reduced (4-macro) floorplan</sub>
+</td>
 </tr>
 </table>
 

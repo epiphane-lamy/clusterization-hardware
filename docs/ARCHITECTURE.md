@@ -2,9 +2,17 @@
 
 This document walks through the full path of the project: from the software reference model provided by the lab to the different SystemVerilog hardware architectures developed throughout the project (see v1, v2, and v3), covering the quantization work and the design trade-offs along the way. For a quick overview, see the [README](../README.md). For the detailed, argued rationale behind each major decision, see the [ADRs](decisions/).
 
-> **Scope of this document**: the toplevel architecture and the design decisions that structure the project. The internal micro-architecture of the compute blocks — [exp](blocks/exp_block.md), [grad](blocks/grad_block.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) — is covered in [blocks/](blocks/).
+> **Scope of this document**: the toplevel architecture and the design decisions that structure the project. The internal micro-architecture of the compute blocks is covered in [blocks/](blocks/) (minor architectural updates like v3 are documented directly within the SystemVerilog source code)
+> * **`exp`**: [`v1`](blocks/exp_block.md) | [`v2/v3`](blocks/exp_block_v2.md)
+> * **`grad`**: [`v1`](blocks/grad_block.md) | [`v2/v3`](blocks/grad_block_v2.md)
+> * **`upd`**: [`v1/v2/v3`](blocks/upd_block.md)
+> * **`cluster_assign`**: [`v1/v2/v3`](blocks/cluster_assign.md)
+> * **`ping_pong_arbiter`**: [`v1`](blocks/ping_pong_arbiter.md)
+> * **Memory wrappers**:
+>   * **`coordinate memory`**: [v1/v2/v3](blocks/coord_mem_wrapper.md)
+>   * **`cluster memory`**: [v1/v2/v3](blocks/cluster_mem_wrapper.md)
+>   * **`P_ij_memory`**: [v1](blocks/pij_mem_wrapper.md)
 
-> **Scope of this document**: the toplevel architecture and the design decisions that structure the project. The internal micro-architecture of the compute blocks — [exp](blocks/exp_block.md), [exp_v2](blocks/exp_block_v2.md), [grad](blocks/grad_block.md), [grad_v2](blocks/grad_block_v2.md), [ping_pong_arbiter](blocks/ping_pong_arbiter.md), [upd](blocks/upd_block.md), [cluster_assign](blocks/cluster_assign.md) — is covered in [blocks/](blocks/). The same applies to the memory wrappers — [coord_mem](blocks/coord_mem_wrapper.md), [cluster_mem](blocks/cluster_mem_wrapper.md), [P_ij_mem](blocks/pij_mem_wrapper.md).
 ---
 
 ## 1. The software reference model
@@ -53,7 +61,13 @@ The data flow follows the same logic as the software model (`exp` → matrix `P`
 
 ### Part 2 — Final cluster assignment
 
-![Software reference architecture, part 2](img/archi_part2_software.png)
+<table>
+<tr>
+<td width="100%">
+  <img src="img/archi_part2_software.png" width="300">
+</td>
+</tr>
+</table>
 
 Once the `N` iterations are complete, the points' final coordinates have converged into clusters. The `cluster assign` block then assigns a cluster number to each point based on its final position:
 
