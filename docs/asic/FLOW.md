@@ -71,14 +71,10 @@ The flow itself is unchanged from §1–§4 above. The only structural differenc
 
 **`v2.0`** is the first full P&R pass on this reduced macro set:
 
-<table>
-<tr>
-<td width="100%">
-<img src="img/floorplan_amoeba_view_v2_0.png" width="250" alt="Amoeba view, v2.0 floorplan">
-<br><sub><code>v2.0</code> — first full P&R pass on the reduced (4-macro) floorplan</sub>
-</td>
-</tr>
-</table>
+<div>
+  <img src="img/floorplan_amoeba_view_v2_0.png" width="250" alt="Amoeba view, v2.0 floorplan"><br>
+  <sub><code>v2.0</code> — first full P&R pass on the reduced (4-macro) floorplan</sub>
+</div>
 
 Then, a chip-area optimization was performed by increasing the placement density to **89.582%** for v2.3 (see `RESULTS.md`). This latest version also introduced a further power optimization, as it now includes memory gating (see [ADR-0010](../decisions/0010-cen-gating-memory-macros.md)).
 
