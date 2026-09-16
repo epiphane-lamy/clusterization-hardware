@@ -17,7 +17,7 @@ This document walks through the full path of the project: from the software refe
 
 ## 1. The software reference model
 
-The starting point is a 2D clustering algorithm developed by a colleague at the lab (Elias De Almeida Ramos), written in C, in double-precision floating point. Its defining feature — and the reason it was picked as a candidate for hardware porting — is that it **does not need to know the center of the point cloud in advance** to work: grouping happens through an iterative mechanism based on computing each point's entropy relative to its neighbours, rather than through a distance to a centroid fixed a priori (unlike k-means, for instance).
+The starting point is a 2D clustering algorithm developed by a colleague at the lab (Elias De Almeida Ramos), written in C, in double-precision floating point. Its defining feature — and the reason it was picked as a candidate for hardware porting — is that it **does not need to know the number of clusters in advance** to work: grouping happens through an iterative mechanism based on computing each point's entropy relative to its neighbours, rather than through a distance to a centroid fixed a priori (unlike k-means, for instance).
 
 At each iteration (`step`), the algorithm:
 1. Computes a similarity matrix `P` between all points, via a Gaussian kernel applied to the Euclidean distance between each pair of points.

@@ -8,7 +8,7 @@ A 2D point-clustering algorithm — normally run in floating point on a CPU — 
 
 ## What this is
 
-The clustering algorithm groups 2D points into clusters using an iterative, entropy-based method — it never needs to know the number of clusters or their centers in advance, unlike k-means. It was designed in software (C, floating point) by a mathematician colleague at the lab; this project is the full hardware port of that algorithm, from architecture analysis to a working ASIC layout.
+The clustering algorithm groups 2D points into clusters using an iterative, entropy-based method — it never needs to know the number of clusters in advance, unlike k-means. It was designed in software (C, floating point) by a mathematician colleague at the lab; this project is the full hardware port of that algorithm, from architecture analysis to a working ASIC layout.
 
 **The central problem this architecture solves:** the reference software builds and stores a full `N × N` similarity matrix at every iteration. For 1000 points, that's 1,000,000 coefficients — about 2 MB, rebuilt every single iteration — which is simply not viable in hardware. Every major architectural choice in this project (row-by-row streaming, on-the-fly row processing) exists to avoid ever materializing that matrix. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §2 for the full reasoning.
 
