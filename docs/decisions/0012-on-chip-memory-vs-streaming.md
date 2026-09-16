@@ -11,7 +11,7 @@ This question is worth asking directly, because the answer to "how much does on-
 
 ## Options considered
 
-1. **On-chip memory for coordinates, `P_ij`, and cluster assignments** (as implemented, across all three architecture versions).
+1. **On-chip memory for coordinates and cluster assignments** (as implemented, across all three architecture versions), and for **`P_ij`** (only in the v1 architecture).
 
 2. **Fully streaming architecture, no on-chip storage of points or results.** Point coordinates would be sent in by an external host as `exp` needs them; cluster assignments would be streamed out as `cluster_assign` produces them, rather than held in a `memory_cluster` for later readout.
 
@@ -25,7 +25,7 @@ Option 2 was not pursued, for three compounding reasons specific to this algorit
 
 3. **Cluster-assignment access is data-dependent, not sequential.** Unlike a predictable, fixed-order stream, `cluster_assign`'s access to the cluster memory depends on how quickly each point converges into a cluster during the algorithm's run — which points get labelled, and in what order, isn't known in advance. A host serving this over a link would need to answer effectively arbitrary-order requests rather than deliver a simple, predictable sequential stream, defeating much of the appeal of "just stream it."
 
-These three effects compound rather than one dominating: a fully streaming version of this design would need drastically more host-link traffic than a single pass over the input data, for every one of the three memories this project actually implements on-chip.
+These three effects compound rather than one dominating: a fully streaming version of this design would need drastically more host-link traffic than a single pass over the input data, for every memories this project actually implements on-chip.
 
 This conclusion is informed by direct prior experience with exactly this kind of bottleneck: an earlier academic project (a quantized CNN on FPGA, communicating with a host over UART) showed that an external link can be a real throughput bottleneck even for a *single* streaming pass over an input (transferring pixel data once). This design's access pattern — repeated, host-updated, and partly data-dependent — would multiply that same bottleneck many times over across a single benchmark run.
 
