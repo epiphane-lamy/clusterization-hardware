@@ -6,6 +6,30 @@ A 2D point-clustering algorithm — normally run in floating point on a CPU — 
 
 ---
 
+## Key Results
+
+Final chip configuration (`v3.0`), power figures from the VCD-based, activity-driven analysis (see `docs/asic/RESULTS.md` §3.1):
+
+| Metric | Result |
+|---|---:|
+| Technology | 45 nm, memory macros used as black boxes |
+| Target frequency | 100 MHz |
+| Core area | 796.0 × 1979.8 µm² (≈ 1.576 mm²) |
+| Total cell area | ≈ 1,510,944.6 µm² |
+| Memory share of total area | ≈ 96.6% |
+| Total power (VCD-based, post-layout) | 6.317 mW |
+| Worst setup slack (WNS) | +1.246 ns |
+| Worst hold slack | −0.099 ns |
+| Routing density | 90.558% |
+| DRC | Clean |
+| Maximum dataset size (`N_max`) | 4096 points |
+| Cycles to result (1250-point benchmark, 50 iterations, post coordinate loading) | 80,149,050 |
+| Latency, same benchmark @ 100 MHz | ≈ 801.5 ms |
+| Throughput, same benchmark @ 100 MHz | ≈ 1,559 points/s |
+| Energy per run, same benchmark | ≈ 5.06 mJ |
+
+---
+
 ## What this is
 
 The clustering algorithm groups 2D points into clusters using an iterative, entropy-based method — it never needs to know the number of clusters in advance, unlike k-means. It was designed in software (C, floating point) by a mathematician colleague at the lab; this project is the full hardware port of that algorithm, from architecture analysis to a working ASIC layout.
@@ -73,6 +97,17 @@ Taken through a full RTL → GDSII flow in Cadence Innovus, using two real memor
 | `v2.3` → `v3.0` | Runtime-configurable point count up to 4096 points via a minimal 4-pin serial loader |
 
 Final assessment: Memories dominate the design: **~96.5% of total cell area** and **~63.06% of total power** — see [`docs/asic/RESULTS.md`](docs/asic/RESULTS.md) for the full area/timing/power comparison, and [`docs/asic/FLOW.md`](docs/asic/FLOW.md) for the methodology, including before/after floorplan views.
+
+## Limitations
+
+- **Throughput is not the focus of this design, by choice.** The algorithm being implemented had never been ported to hardware before, so the priority was to demonstrate a correct, silicon-proven implementation of a brand-new algorithm rather than a high-performance one. As a direct consequence of the row-by-row streaming architecture ([ADR-0002](docs/decisions/0002-single-row-streaming-vs-full-matrix.md)), each iteration re-reads the coordinate memories roughly `N × N` times, repeated over on the order of 50 iterations to convergence — this is what drives the measured 80,149,050-cycle latency for the 1250-point reference benchmark (see Key Results above and `docs/asic/RESULTS.md` §2.3.1/§3.1). The iteration count itself is also a significant performance lever: reducing the number of iterations required for convergence would directly reduce latency and could substantially increase throughput, without requiring additional hardware parallelism. Processing several rows of the `P` matrix in parallel, rather than one at a time, is the natural next step to meaningfully improve throughput — at the cost of duplicating the compute pipeline further, in the same spirit as [ADR-0008](docs/decisions/0008-on-the-fly-dual-exp-pipeline.md).
+- **A small hold violation remains at the worst-case timing corner** (−0.099 ns on `v3.0`, present since `v1.0` and essentially unchanged across all architecture versions). It does not improve by lowering the clock frequency, since hold is a minimum-delay constraint independent of the clock period (see `docs/asic/RESULTS.md` §1.2). Given the project's goal — demonstrating a complete, working RTL-to-GDSII flow rather than a production tapeout — this was accepted rather than iterated on further.
+
+## Reproducibility
+
+- **Reproducible with publicly available tools:** the C reference model, the fixed-point model, RTL simulation, testbenches, benchmark generation, and plotting scripts can be run using publicly available tools, with no proprietary tool required for this part of the flow — see "Reproducing the clustering pipeline" below.
+- **Requires proprietary tools:** synthesis (Cadence Genus) and place-and-route / timing / power analysis (Cadence Innovus).
+- **Technology-specific dependencies:** the backend flow targets a 45 nm PDK, with two memory macros (`RAM_4096X32`, `RAM2P_1024X32`) used as black boxes. Reproducing the synthesis and physical-design results as reported requires access to that PDK and macro library, or adapting the flow to a different one.
 
 ## Reproducing the clustering pipeline
 
